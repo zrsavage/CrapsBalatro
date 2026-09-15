@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { BetKind, RunState } from '../game/types';
 import { BET_LABELS, isBetAllowedNow } from '../game/bets';
+import { useGameStore } from '../state/store';
 
 const CHIP_AMOUNTS = [5, 10, 25, 50, 100];
 
@@ -22,7 +23,8 @@ export function BettingTable({
   onClearKind: (kind: BetKind) => void;
 }) {
   const [chip, setChip] = useState(10);
-  const disabled = run.phase !== 'run' || run.rollsRemaining <= 0;
+  const isRolling = useGameStore((s) => s.isRolling);
+  const disabled = run.phase !== 'run' || run.rollsRemaining <= 0 || isRolling;
 
   const totalsByKind = new Map<BetKind, number>();
   for (const bet of run.activeBets) {
@@ -56,6 +58,7 @@ export function BettingTable({
                 label={BET_LABELS[kind]}
                 amount={totalsByKind.get(kind) ?? 0}
                 allowed={!disabled && isBetAllowedNow(kind, run.shooter) && chip <= run.bankroll}
+                clearAllowed={!isRolling}
                 onAdd={() => onPlace(kind, chip)}
                 onClear={() => onClearKind(kind)}
               />
@@ -101,12 +104,14 @@ function BetSpot({
   label,
   amount,
   allowed,
+  clearAllowed,
   onAdd,
   onClear,
 }: {
   label: string;
   amount: number;
   allowed: boolean;
+  clearAllowed: boolean;
   onAdd: () => void;
   onClear: () => void;
 }) {
@@ -116,7 +121,7 @@ function BetSpot({
         {label}
         {amount > 0 && <span className="bet-spot-amount">${amount}</span>}
       </button>
-      {amount > 0 && (
+      {amount > 0 && clearAllowed && (
         <button className="bet-spot-clear" onClick={onClear} aria-label={`Clear ${label}`}>
           ×
         </button>

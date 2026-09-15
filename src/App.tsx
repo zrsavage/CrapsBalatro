@@ -10,7 +10,6 @@ import { EndScreen } from './components/EndScreen';
 function App() {
   const run = useGameStore((s) => s.run);
   const shop = useGameStore((s) => s.shop);
-  const lastRollFlash = useGameStore((s) => s.lastRollFlash);
   const placeBet = useGameStore((s) => s.placeBet);
   const removeBetsOfKind = useGameStore((s) => s.removeBetsOfKind);
   const roll = useGameStore((s) => s.roll);
@@ -45,7 +44,7 @@ function App() {
       {(run.phase === 'run' || run.phase === 'rolling') && (
         <>
           <Hud run={run} />
-          <DiceTray run={run} onRoll={roll} rollFlash={lastRollFlash} />
+          <DiceTray run={run} onRoll={roll} />
           <BettingTable run={run} onPlace={placeBet} onClearKind={removeBetsOfKind} />
           <RelicBar run={run} />
           <DiceBag run={run} onSetLoadout={setLoadout} />

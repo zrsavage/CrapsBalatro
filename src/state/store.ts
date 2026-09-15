@@ -1,15 +1,19 @@
 import { create } from 'zustand';
-import type { BetKind, RunState, ShopOffer, ShopState } from '../game/types';
+import type { BetKind, RollResult, RunState, ShopOffer, ShopState } from '../game/types';
 import { createInitialRun } from '../game/run';
 import { mulberry32, makeSeed } from '../game/rng';
 import { buyOffer, placeBet, removeBet, removeBetsOfKind, rollOnce, setLoadout, startNextRound } from '../game/engine';
 import { generateShop } from '../game/shop';
+import { playDiceRoll, playLose, playNeutral, playWin, primeAudio } from '../game/sound';
+
+const ROLL_ANIMATION_MS = 950;
 
 interface GameStore {
   run: RunState;
   rng: () => number;
   shop: ShopState | null;
-  lastRollFlash: number; // increments each roll, lets UI trigger dice animations
+  isRolling: boolean;
+  pendingRoll: RollResult | null; // the roll dice are animating toward
   placeBet: (kind: BetKind, amount: number) => void;
   removeBet: (betId: string) => void;
   removeBetsOfKind: (kind: BetKind) => void;
@@ -34,7 +38,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     run: initial.run,
     rng: initial.rng,
     shop: null,
-    lastRollFlash: 0,
+    isRolling: false,
+    pendingRoll: null,
 
     placeBet: (kind, amount) => set((s) => ({ run: placeBet(s.run, kind, amount) })),
 
@@ -43,11 +48,23 @@ export const useGameStore = create<GameStore>((set, get) => {
     removeBetsOfKind: (kind) => set((s) => ({ run: removeBetsOfKind(s.run, kind) })),
 
     roll: () => {
-      const { run, rng } = get();
-      if (run.phase !== 'run' || run.rollsRemaining <= 0) return;
-      const { run: next } = rollOnce(run, rng);
-      const shop = next.phase === 'shop' ? generateShop(next, rng) : null;
-      set((s) => ({ run: next, shop, lastRollFlash: s.lastRollFlash + 1 }));
+      const { run, rng, isRolling } = get();
+      if (isRolling || run.phase !== 'run' || run.rollsRemaining <= 0) return;
+
+      primeAudio();
+      playDiceRoll();
+
+      const { run: next, outcome } = rollOnce(run, rng);
+      set({ isRolling: true, pendingRoll: outcome.roll });
+
+      setTimeout(() => {
+        if (outcome.netChange > 0) playWin();
+        else if (outcome.netChange < 0) playLose();
+        else playNeutral();
+
+        const shop = next.phase === 'shop' ? generateShop(next, get().rng) : null;
+        set({ run: next, shop, isRolling: false, pendingRoll: null });
+      }, ROLL_ANIMATION_MS);
     },
 
     enterShopIfNeeded: () => {
@@ -83,7 +100,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     restartRun: () => {
       const fresh = freshRun();
-      set({ run: fresh.run, rng: fresh.rng, shop: null, lastRollFlash: 0 });
+      set({ run: fresh.run, rng: fresh.rng, shop: null, isRolling: false, pendingRoll: null });
     },
   };
 });

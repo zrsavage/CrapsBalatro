@@ -176,7 +176,7 @@ h3 {
 }
 
 .die-rolling {
-  animation: shake 0.38s ease;
+  animation: shake 0.32s ease-in-out infinite;
 }
 
 @keyframes shake {

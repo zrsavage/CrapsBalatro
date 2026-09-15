@@ -3,9 +3,9 @@ import { randInt } from './rng';
 
 export const ANTE_COUNT = 8;
 export const ROUNDS_PER_ANTE = 3;
-export const BASE_ROLL_LIMIT = 10;
+export const BASE_ROLL_LIMIT = 12;
 export const STARTING_BANKROLL = 500;
-export const BASE_TARGET = 300;
+export const BASE_TARGET = 40;
 export const RELIC_SLOTS = 5;
 
 const BOSS_EFFECTS: BossEffectId[] = ['coldTable', 'noSevens', 'shortRolls', 'fieldFreeze'];
@@ -24,10 +24,10 @@ function roundKindFor(roundIndex: number): RoundKind {
 }
 
 function anteMultiplier(ante: number): number {
-  return Math.pow(1.55, ante - 1);
+  return Math.pow(1.35, ante - 1);
 }
 
-const ROUND_MULTIPLIER = [1, 1.35, 1.85];
+const ROUND_MULTIPLIER = [1, 1.3, 1.7];
 
 export function buildRoundDef(ante: number, roundIndex: number, rng: () => number): RoundDef {
   const kind = roundKindFor(roundIndex);
