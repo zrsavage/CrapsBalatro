@@ -1,0 +1,575 @@
+:root {
+  --felt: #0b5c34;
+  --felt-dark: #073f24;
+  --felt-line: #e8c97a;
+  --gold: #e8c97a;
+  --gold-dim: #a68a4d;
+  --panel: #12331f;
+  --panel-light: #1c4a2c;
+  --text: #f1ede1;
+  --text-dim: #b9c4b6;
+  --win: #4fd67a;
+  --lose: #ff6b6b;
+  --push: #f1c95c;
+  --shadow: rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+  color: var(--text);
+  background: var(--felt-dark);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: radial-gradient(ellipse at top, var(--felt) 0%, var(--felt-dark) 75%);
+}
+
+body {
+  min-height: 100vh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Georgia', serif;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 10px 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 10px var(--shadow);
+}
+
+.title-bar {
+  text-align: center;
+  padding: 6px 0 2px;
+}
+
+.title-bar h1 {
+  font-size: 1.6rem;
+  color: var(--gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.title-bar .subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+@media (min-width: 720px) {
+  .app {
+    padding: 16px 24px 100px;
+  }
+}
+
+/* HUD */
+.hud-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.hud-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+
+.hud-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.hud-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.hud-value.gold {
+  color: var(--gold);
+}
+
+.hud-target {
+  margin-top: 10px;
+}
+
+.hud-target-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--felt-dark);
+  border: 1px solid var(--gold-dim);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  transition: width 0.3s ease;
+}
+
+.boss-banner {
+  margin-top: 10px;
+  padding: 6px 10px;
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid var(--lose);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--lose);
+}
+
+/* Dice tray */
+.dice-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.die {
+  width: 56px;
+  height: 56px;
+  background: var(--text);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px var(--shadow);
+  padding: 6px;
+  transition: transform 0.15s ease;
+}
+
+.die-rolling {
+  animation: shake 0.38s ease;
+}
+
+@keyframes shake {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-14deg) scale(1.05);
+  }
+  50% {
+    transform: rotate(10deg) scale(1.05);
+  }
+  75% {
+    transform: rotate(-6deg) scale(1.02);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.die-face {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.pip {
+  border-radius: 50%;
+  background: var(--felt-dark);
+  align-self: center;
+  justify-self: center;
+  width: 60%;
+  height: 60%;
+}
+
+.pip-empty {
+  background: transparent;
+}
+
+.dice-total {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--gold);
+  min-width: 40px;
+  text-align: center;
+}
+
+.roll-btn {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--gold), var(--gold-dim));
+  color: var(--felt-dark);
+  box-shadow: 0 3px 6px var(--shadow);
+}
+
+.roll-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.roll-feed {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.roll-feed li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--felt-dark);
+}
+
+.feed-win {
+  color: var(--win);
+}
+
+.feed-lose {
+  color: var(--lose);
+}
+
+.feed-push,
+.feed-stillWorking {
+  color: var(--push);
+}
+
+.feed-neutral {
+  color: var(--text-dim);
+}
+
+/* Betting table */
+.chip-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.chip {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px dashed var(--gold-dim);
+  background: var(--panel-light);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.chip-selected {
+  border-style: solid;
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--felt-dark);
+}
+
+.chip-hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.bet-row {
+  margin-bottom: 10px;
+}
+
+.bet-row-title {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.bet-spots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bet-spot {
+  position: relative;
+  display: inline-flex;
+}
+
+.bet-spot-main {
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel-light);
+  color: var(--text);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+}
+
+.bet-spot-main:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bet-spot-active .bet-spot-main {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold) inset;
+}
+
+.bet-spot-amount {
+  font-weight: bold;
+  color: var(--gold);
+}
+
+.bet-spot-clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--lose);
+  color: white;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.bet-spot-action {
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1px dashed var(--gold-dim);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.bet-spot-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.working-bets {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Relics & dice */
+.relic-bar-title,
+.dice-bag-title {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.relic-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.relic-empty {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.relic-chip {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel-light);
+}
+
+.rarity-uncommon {
+  border-color: #6fb8ff;
+}
+
+.rarity-rare {
+  border-color: #d98bff;
+}
+
+.dice-bag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dice-bag-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel-light);
+  color: var(--text);
+  min-width: 100px;
+}
+
+.dice-bag-item.equipped {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold) inset;
+}
+
+.dice-bag-name {
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.dice-bag-faces {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.equipped-tag {
+  font-size: 0.65rem;
+  color: var(--gold);
+}
+
+/* Shop */
+.shop-title {
+  color: var(--gold);
+  text-align: center;
+}
+
+.shop-bankroll {
+  text-align: center;
+  color: var(--text-dim);
+  margin: 4px 0 14px;
+}
+
+.shop-offers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.offer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel-light);
+}
+
+.offer-type {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.offer-name {
+  font-weight: bold;
+}
+
+.offer-desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  flex: 1;
+}
+
+.offer-buy {
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+  background: var(--gold);
+  color: var(--felt-dark);
+  font-weight: bold;
+}
+
+.offer-buy:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.shop-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.secondary-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  color: var(--text);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* End screen */
+.end-screen {
+  text-align: center;
+}
+
+.end-title.win {
+  color: var(--win);
+}
+
+.end-title.lose {
+  color: var(--lose);
+}
