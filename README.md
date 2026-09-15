@@ -1,4 +1,4 @@
-# CrapsBalatro
+# Crapslatro
 
 A Balatro-style roguelike deckbuilder — but instead of scoring poker hands, you're working a craps table.
 

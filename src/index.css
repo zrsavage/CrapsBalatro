@@ -502,6 +502,92 @@ h3 {
   margin-left: auto;
 }
 
+.map-toggle {
+  display: block;
+  margin: 4px 0 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.table-map {
+  background: var(--felt-dark);
+  border: 2px solid var(--gold-dim);
+  border-radius: 10px;
+  padding: 8px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.map-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.map-group-title {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  opacity: 0.8;
+}
+
+.map-row {
+  display: flex;
+  gap: 3px;
+}
+
+.map-cell {
+  position: relative;
+  flex: 1;
+  min-height: 30px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--felt) 60%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 2px;
+  gap: 1px;
+}
+
+.map-cell-wide {
+  flex: 2;
+}
+
+.map-cell-label {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.1;
+}
+
+.map-cell-active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold) inset;
+}
+
+.map-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--felt-dark);
+  font-size: 0.6rem;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
 .bet-row {
   margin-bottom: 10px;
 }

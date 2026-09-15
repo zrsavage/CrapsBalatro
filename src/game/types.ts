@@ -1,4 +1,4 @@
-// Core data model for CrapsBalatro: a Balatro-style roguelike built on craps.
+// Core data model for Crapslatro: a Balatro-style roguelike built on craps.
 
 export type PipFace = 1 | 2 | 3 | 4 | 5 | 6;
 

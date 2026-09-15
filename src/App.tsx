@@ -38,8 +38,8 @@ function App() {
   return (
     <div className="app">
       <div className="title-bar">
-        <h1>🎲 CrapsBalatro</h1>
-        <div className="subtitle">Beat the house, ante after ante.</div>
+        <h1>🎲 Crapslatro</h1>
+        <div className="subtitle">Beat the House, 1 roll at a time.</div>
         <CosmeticsPanel />
       </div>
 
