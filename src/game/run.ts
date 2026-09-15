@@ -3,7 +3,7 @@ import { randInt } from './rng';
 
 export const ANTE_COUNT = 8;
 export const ROUNDS_PER_ANTE = 3;
-export const BASE_ROLL_LIMIT = 12;
+export const BASE_ROLL_LIMIT = 18;
 export const STARTING_BANKROLL = 500;
 export const BASE_TARGET = 40;
 export const RELIC_SLOTS = 5;

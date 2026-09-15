@@ -2,7 +2,16 @@ import { create } from 'zustand';
 import type { BetKind, RollResult, RunState, ShopOffer, ShopState } from '../game/types';
 import { createInitialRun } from '../game/run';
 import { mulberry32, makeSeed } from '../game/rng';
-import { buyOffer, placeBet, removeBet, removeBetsOfKind, rollOnce, setLoadout, startNextRound } from '../game/engine';
+import {
+  buyOffer,
+  endRoundEarly,
+  placeBet,
+  removeBet,
+  removeBetsOfKind,
+  rollOnce,
+  setLoadout,
+  startNextRound,
+} from '../game/engine';
 import { generateShop } from '../game/shop';
 import { playDiceRoll, playLose, playNeutral, playWin, primeAudio } from '../game/sound';
 
@@ -18,6 +27,7 @@ interface GameStore {
   removeBet: (betId: string) => void;
   removeBetsOfKind: (kind: BetKind) => void;
   roll: () => void;
+  cashOutRound: () => void;
   enterShopIfNeeded: () => void;
   buy: (offer: ShopOffer) => void;
   rerollShop: () => void;
@@ -65,6 +75,16 @@ export const useGameStore = create<GameStore>((set, get) => {
         const shop = next.phase === 'shop' ? generateShop(next, get().rng) : null;
         set({ run: next, shop, isRolling: false, pendingRoll: null });
       }, ROLL_ANIMATION_MS);
+    },
+
+    cashOutRound: () => {
+      const { run, rng, isRolling } = get();
+      if (isRolling) return;
+      const next = endRoundEarly(run);
+      if (next === run) return;
+      playWin();
+      const shop = next.phase === 'shop' ? generateShop(next, rng) : null;
+      set({ run: next, shop });
     },
 
     enterShopIfNeeded: () => {

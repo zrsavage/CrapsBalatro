@@ -127,8 +127,7 @@ export function rollOnce(run: RunState, rng: () => number): { run: RunState; out
     history: [...run.history, outcome],
   };
 
-  const roundScoreSoFar = next.bankroll - next.roundStartBankroll;
-  if (next.rollsRemaining <= 0 || roundScoreSoFar >= next.currentRound.target) {
+  if (next.rollsRemaining <= 0) {
     next = settleRoundEnd(next);
   }
 
@@ -138,6 +137,23 @@ export function rollOnce(run: RunState, rng: () => number): { run: RunState; out
 function pickFace(faces: readonly DieFace[], rng: () => number): DieFace {
   const idx = Math.floor(rng() * faces.length);
   return faces[Math.min(idx, faces.length - 1)];
+}
+
+function finalizeSuccess(run: RunState): RunState {
+  const nextCoords = nextRoundCoords(run.ante, run.roundIndex);
+  if (!nextCoords) {
+    return {
+      ...run,
+      phase: 'victory',
+      lastRunSummary: {
+        won: true,
+        anteReached: run.ante,
+        roundReached: run.roundIndex + 1,
+        finalBankroll: run.bankroll,
+      },
+    };
+  }
+  return { ...run, phase: 'shop' };
 }
 
 function settleRoundEnd(run: RunState): RunState {
@@ -166,21 +182,35 @@ function settleRoundEnd(run: RunState): RunState {
     };
   }
 
-  const nextCoords = nextRoundCoords(run.ante, run.roundIndex);
-  if (!nextCoords) {
-    return {
-      ...cleared,
-      phase: 'victory',
-      lastRunSummary: {
-        won: true,
-        anteReached: run.ante,
-        roundReached: run.roundIndex + 1,
-        finalBankroll: bankroll,
-      },
-    };
-  }
+  return finalizeSuccess(cleared);
+}
 
-  return { ...cleared, phase: 'shop' };
+/** Bonus paid per unused roll when the player voluntarily cashes out of a
+ * round they've already cleared, instead of risking further swings. */
+export function earlyCashOutBonusPerRoll(run: RunState): number {
+  return 5 + run.ante * 3;
+}
+
+export function canEndRoundEarly(run: RunState): boolean {
+  if (run.phase !== 'run' || run.rollsRemaining <= 0) return false;
+  const roundScore = run.bankroll - run.roundStartBankroll;
+  return roundScore >= run.currentRound.target;
+}
+
+/** Lets the player bank their win now rather than keep rolling with the
+ * target already met, rewarding the choice with a bonus for each roll
+ * left unused. */
+export function endRoundEarly(run: RunState): RunState {
+  if (!canEndRoundEarly(run)) return run;
+  const refund = run.activeBets.reduce((sum, b) => sum + b.amount, 0);
+  const bonus = run.rollsRemaining * earlyCashOutBonusPerRoll(run);
+  const cleared: RunState = {
+    ...run,
+    bankroll: run.bankroll + refund + bonus,
+    activeBets: [],
+    rollsRemaining: 0,
+  };
+  return finalizeSuccess(cleared);
 }
 
 /** Called when the player leaves the shop to start the next round. */

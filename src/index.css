@@ -147,6 +147,23 @@ h3 {
   transition: width 0.3s ease;
 }
 
+.cash-out-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: 1px solid var(--win);
+  border-radius: 8px;
+  background: rgba(79, 214, 122, 0.15);
+  color: var(--win);
+}
+
+.cash-out-btn:hover {
+  background: rgba(79, 214, 122, 0.25);
+}
+
 .boss-banner {
   margin-top: 10px;
   padding: 6px 10px;

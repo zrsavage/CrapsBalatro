@@ -1,11 +1,14 @@
 import type { RunState } from '../game/types';
 import { BOSS_EFFECT_LABELS } from '../game/run';
+import { canEndRoundEarly, earlyCashOutBonusPerRoll } from '../game/engine';
 
 const ROUND_NAMES = ['Come Out', 'Point', 'Boss Shooter'];
 
-export function Hud({ run }: { run: RunState }) {
+export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }) {
   const roundScore = run.bankroll - run.roundStartBankroll;
   const pct = Math.max(0, Math.min(100, (roundScore / run.currentRound.target) * 100));
+  const canCashOut = canEndRoundEarly(run);
+  const cashOutBonus = run.rollsRemaining * earlyCashOutBonusPerRoll(run);
 
   return (
     <div className="panel hud">
@@ -38,6 +41,11 @@ export function Hud({ run }: { run: RunState }) {
           <div className="progress-fill" style={{ width: `${pct}%` }} />
         </div>
       </div>
+      {canCashOut && (
+        <button className="cash-out-btn" onClick={onCashOut}>
+          Cash Out Now — bank the win +${cashOutBonus} bonus
+        </button>
+      )}
       {run.currentRound.bossEffect && (
         <div className="boss-banner">⚠ {BOSS_EFFECT_LABELS[run.currentRound.bossEffect]}</div>
       )}

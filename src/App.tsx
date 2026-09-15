@@ -13,6 +13,7 @@ function App() {
   const placeBet = useGameStore((s) => s.placeBet);
   const removeBetsOfKind = useGameStore((s) => s.removeBetsOfKind);
   const roll = useGameStore((s) => s.roll);
+  const cashOutRound = useGameStore((s) => s.cashOutRound);
   const buy = useGameStore((s) => s.buy);
   const rerollShop = useGameStore((s) => s.rerollShop);
   const setLoadout = useGameStore((s) => s.setLoadout);
@@ -43,7 +44,7 @@ function App() {
 
       {(run.phase === 'run' || run.phase === 'rolling') && (
         <>
-          <Hud run={run} />
+          <Hud run={run} onCashOut={cashOutRound} />
           <DiceTray run={run} onRoll={roll} />
           <BettingTable run={run} onPlace={placeBet} onClearKind={removeBetsOfKind} />
           <RelicBar run={run} />
