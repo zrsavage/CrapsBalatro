@@ -110,6 +110,9 @@ export const useGameStore = create<GameStore>((set, get) => {
         run: next,
         shop: s.shop ? { ...s.shop, offers: s.shop.offers.filter((o) => o.id !== offer.id) } : null,
       }));
+
+      const unlocked = checkAchievements(run, next, undefined, new Set(useCosmeticsStore.getState().unlockedAchievements));
+      useCosmeticsStore.getState().unlockAchievements(unlocked);
     },
 
     rerollShop: () => {

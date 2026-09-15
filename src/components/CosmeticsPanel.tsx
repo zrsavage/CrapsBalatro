@@ -67,9 +67,26 @@ export function CosmeticsPanel() {
               })}
             </div>
 
-            <span className="cosmetics-section-title">Achievements</span>
+            <span className="cosmetics-section-title">Achievements — Starter</span>
             <ul className="achievement-list">
-              {ACHIEVEMENTS.map((a) => {
+              {ACHIEVEMENTS.filter((a) => a.tier === 1).map((a) => {
+                const done = unlocked.includes(a.id);
+                return (
+                  <li key={a.id} className={done ? 'achievement-done' : 'achievement-locked'}>
+                    <span className="achievement-icon">{done ? '✅' : '🔒'}</span>
+                    <span className="achievement-body">
+                      <span className="achievement-name">{a.name}</span>
+                      <span className="achievement-desc">{a.description}</span>
+                      <span className="achievement-reward">Unlocks: {a.unlockLabel}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <span className="cosmetics-section-title">Achievements — Hard</span>
+            <ul className="achievement-list">
+              {ACHIEVEMENTS.filter((a) => a.tier === 2).map((a) => {
                 const done = unlocked.includes(a.id);
                 return (
                   <li key={a.id} className={done ? 'achievement-done' : 'achievement-locked'}>

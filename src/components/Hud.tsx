@@ -34,8 +34,8 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
           <span className="hud-value gold">${run.bankroll}</span>
         </div>
         <div className="hud-stat">
-          <span className="hud-label">Comp Points</span>
-          <span className="hud-value comp-points">{run.comps} CP</span>
+          <span className="hud-label">Comps</span>
+          <span className="hud-value comp-points">{run.comps}</span>
         </div>
       </div>
 

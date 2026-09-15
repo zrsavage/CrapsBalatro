@@ -23,7 +23,7 @@ export function Shop({
     <div className="panel shop">
       <h2 className="shop-title">Shop — Ante {run.ante}</h2>
       <p className="shop-bankroll">
-        <span className="comp-points">{run.comps} CP</span> to spend · Bankroll: ${run.bankroll}
+        <span className="comp-points">{run.comps} Comps</span> to spend · Bankroll: ${run.bankroll}
       </p>
 
       <div className="shop-offers">
@@ -34,7 +34,7 @@ export function Shop({
 
       <div className="shop-actions">
         <button className="secondary-btn" onClick={onReroll} disabled={run.comps < shop.rerollCost}>
-          Reroll ({shop.rerollCost} CP)
+          Reroll ({shop.rerollCost} Comps)
         </button>
       </div>
 
@@ -71,7 +71,7 @@ function OfferCard({
       {dieDef && <DieFaces faces={dieDef.faces} />}
       <div className="offer-desc">{desc}</div>
       <button className="offer-buy" disabled={!canAfford || relicsFull} onClick={() => onBuy(offer)}>
-        {relicsFull ? 'Slots Full' : `Buy ${offer.price} CP`}
+        {relicsFull ? 'Slots Full' : `Buy ${offer.price} Comps`}
       </button>
     </div>
   );

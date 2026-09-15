@@ -60,6 +60,42 @@
   color-scheme: dark;
 }
 
+:root[data-skin='emerald'] {
+  /* Emerald Table: deep jewel-toned green and gold */
+  --felt: #0d3b2e;
+  --felt-dark: #082a20;
+  --felt-line: #d4af37;
+  --gold: #d4af37;
+  --gold-dim: #a3872b;
+  --panel: #134a3a;
+  --panel-light: #1a5c47;
+  --text: #f1ede1;
+  --text-dim: #a9c4b6;
+  --win: #4fd67a;
+  --lose: #ff6b6b;
+  --push: #f1c95c;
+  --shadow: rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+:root[data-skin='royal-purple'] {
+  /* Royal Purple: velvet-rope VIP room look */
+  --felt: #2e1245;
+  --felt-dark: #1f0c30;
+  --felt-line: #e8c97a;
+  --gold: #e8c97a;
+  --gold-dim: #b89a52;
+  --panel: #3a1a59;
+  --panel-light: #492271;
+  --text: #f3ecff;
+  --text-dim: #c3aee0;
+  --win: #4fd67a;
+  --lose: #ff6b6b;
+  --push: #f1c95c;
+  --shadow: rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
 :root[data-dice='ivory'] {
   --die-bg: #f8f4e8;
   --die-pip: #2b2015;
@@ -73,6 +109,16 @@
 :root[data-dice='obsidian'] {
   --die-bg: #1c1c22;
   --die-pip: #e8c97a;
+}
+
+:root[data-dice='sapphire'] {
+  --die-bg: #12305c;
+  --die-pip: #f8f4e8;
+}
+
+:root[data-dice='jade'] {
+  --die-bg: #0f4d3a;
+  --die-pip: #f8f4e8;
 }
 
 * {
