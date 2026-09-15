@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { BetKind, RunState } from '../game/types';
-import { BET_LABELS, isBetAllowedNow } from '../game/bets';
+import { BASE_ODDS, BET_LABELS, isBetAllowedNow } from '../game/bets';
+import { chipDenominations } from '../game/run';
 import { useGameStore } from '../state/store';
 
-const CHIP_AMOUNTS = [5, 10, 25, 50, 100];
+function oddsLabel(kind: BetKind): string {
+  const [num, den] = BASE_ODDS[kind];
+  return `${num}:${den}`;
+}
 
 const SIMPLE_ROWS: { title: string; kinds: BetKind[] }[] = [
   { title: 'Line', kinds: ['pass', 'dontPass'] },
@@ -11,6 +15,7 @@ const SIMPLE_ROWS: { title: string; kinds: BetKind[] }[] = [
   { title: 'Place', kinds: ['place4', 'place5', 'place6', 'place8', 'place9', 'place10'] },
   { title: 'Hard Ways', kinds: ['hard4', 'hard6', 'hard8', 'hard10'] },
   { title: 'One Roll', kinds: ['anyCraps', 'anySeven'] },
+  { title: 'Horn', kinds: ['horn2', 'horn3', 'horn11', 'horn12'] },
 ];
 
 export function BettingTable({
@@ -22,7 +27,12 @@ export function BettingTable({
   onPlace: (kind: BetKind, amount: number) => void;
   onClearKind: (kind: BetKind) => void;
 }) {
-  const [chip, setChip] = useState(10);
+  const chipAmounts = chipDenominations(run.ante);
+  const [chip, setChip] = useState(chipAmounts[1]);
+  useEffect(() => {
+    setChip(chipDenominations(run.ante)[1]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run.ante]);
   const isRolling = useGameStore((s) => s.isRolling);
   const disabled = run.phase !== 'run' || run.rollsRemaining <= 0 || isRolling;
 
@@ -36,7 +46,7 @@ export function BettingTable({
   return (
     <div className="panel betting-table">
       <div className="chip-selector">
-        {CHIP_AMOUNTS.map((amt) => (
+        {chipAmounts.map((amt) => (
           <button
             key={amt}
             className={`chip${chip === amt ? ' chip-selected' : ''}`}
@@ -56,6 +66,7 @@ export function BettingTable({
               <BetSpot
                 key={kind}
                 label={BET_LABELS[kind]}
+                odds={oddsLabel(kind)}
                 amount={totalsByKind.get(kind) ?? 0}
                 allowed={!disabled && isBetAllowedNow(kind, run.shooter) && chip <= run.bankroll}
                 clearAllowed={!isRolling}
@@ -102,6 +113,7 @@ export function BettingTable({
 
 function BetSpot({
   label,
+  odds,
   amount,
   allowed,
   clearAllowed,
@@ -109,6 +121,7 @@ function BetSpot({
   onClear,
 }: {
   label: string;
+  odds: string;
   amount: number;
   allowed: boolean;
   clearAllowed: boolean;
@@ -119,6 +132,7 @@ function BetSpot({
     <div className={`bet-spot${amount > 0 ? ' bet-spot-active' : ''}`}>
       <button className="bet-spot-main" disabled={!allowed} onClick={onAdd}>
         {label}
+        <span className="bet-spot-odds">{odds}</span>
         {amount > 0 && <span className="bet-spot-amount">${amount}</span>}
       </button>
       {amount > 0 && clearAllowed && (

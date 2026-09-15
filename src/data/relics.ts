@@ -125,6 +125,30 @@ export const RELIC_CATALOG: RelicDef[] = [
     price: 6,
     bonusRolls: 1,
   },
+  {
+    id: 'boxcar_horn',
+    name: 'Boxcar Horn',
+    description: 'Horn 2 and Horn 12 pay an extra 20%.',
+    rarity: 'uncommon',
+    price: 7,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'horn2' || kind === 'horn12' ? base * 1.2 : base),
+  },
+  {
+    id: 'yo_eleven',
+    name: 'Yo Eleven',
+    description: 'Horn 3 and Horn 11 pay an extra 20%.',
+    rarity: 'uncommon',
+    price: 7,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'horn3' || kind === 'horn11' ? base * 1.2 : base),
+  },
+  {
+    id: 'horn_dog',
+    name: 'Horn Dog',
+    description: 'Winning any Horn bet also pays a flat +$4 bonus.',
+    rarity: 'rare',
+    price: 10,
+    bonusOnWin: (kind) => (kind === 'horn2' || kind === 'horn3' || kind === 'horn11' || kind === 'horn12' ? 4 : 0),
+  },
 ];
 
 const RELIC_BY_ID = new Map(RELIC_CATALOG.map((r) => [r.id, r]));

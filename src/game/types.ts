@@ -42,7 +42,11 @@ export type BetKind =
   | 'hard8'
   | 'hard10'
   | 'anyCraps'
-  | 'anySeven';
+  | 'anySeven'
+  | 'horn2'
+  | 'horn3'
+  | 'horn11'
+  | 'horn12';
 
 /** A bet the player has chips on. Come/Don't Come bets carry a `point`
  * once they migrate off the come-line onto a number. */
@@ -137,6 +141,8 @@ export interface RunState {
   roundIndex: number;
   bankroll: number;
   roundStartBankroll: number;
+  comps: number;
+  cashOutCount: number;
   rollsRemaining: number;
   currentRound: RoundDef;
   shooter: ShooterState;

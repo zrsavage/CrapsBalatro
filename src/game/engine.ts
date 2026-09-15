@@ -10,7 +10,7 @@ import { isBetAllowedNow, resolveRoll } from './bets';
 import { rollDice } from './dice';
 import { getDieDef } from '../data/dice';
 import { getRelicDef } from '../data/relics';
-import { buildRoundDef, nextRoundCoords, RELIC_SLOTS } from './run';
+import { buildRoundDef, compsForClearingRound, nextRoundCoords, RELIC_SLOTS } from './run';
 
 export const MIN_BET = 5;
 
@@ -182,7 +182,8 @@ function settleRoundEnd(run: RunState): RunState {
     };
   }
 
-  return finalizeSuccess(cleared);
+  const comps = cleared.comps + compsForClearingRound(run.ante);
+  return finalizeSuccess({ ...cleared, comps });
 }
 
 /** Bonus paid per unused roll when the player voluntarily cashes out of a
@@ -204,9 +205,12 @@ export function endRoundEarly(run: RunState): RunState {
   if (!canEndRoundEarly(run)) return run;
   const refund = run.activeBets.reduce((sum, b) => sum + b.amount, 0);
   const bonus = run.rollsRemaining * earlyCashOutBonusPerRoll(run);
+  const bonusComps = Math.ceil(run.rollsRemaining / 2);
   const cleared: RunState = {
     ...run,
     bankroll: run.bankroll + refund + bonus,
+    comps: run.comps + compsForClearingRound(run.ante) + bonusComps,
+    cashOutCount: run.cashOutCount + 1,
     activeBets: [],
     rollsRemaining: 0,
   };
@@ -239,7 +243,7 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
 }
 
 export function buyOffer(run: RunState, offer: ShopOffer): RunState {
-  if (run.bankroll < offer.price) return run;
+  if (run.comps < offer.price) return run;
   if (offer.type === 'relic') {
     if (run.relics.length >= run.relicSlots) return run;
     const instance = { instanceId: `relic-${offer.refId}-${Date.now()}`, defId: offer.refId };
@@ -247,12 +251,13 @@ export function buyOffer(run: RunState, offer: ShopOffer): RunState {
     const bonus = def?.bonusOnAcquire ?? 0;
     return {
       ...run,
-      bankroll: run.bankroll - offer.price + bonus,
+      comps: run.comps - offer.price,
+      bankroll: run.bankroll + bonus,
       relics: [...run.relics, instance],
     };
   }
   const instance = { instanceId: `die-${offer.refId}-${Date.now()}`, defId: offer.refId };
-  return { ...run, bankroll: run.bankroll - offer.price, dicePool: [...run.dicePool, instance] };
+  return { ...run, comps: run.comps - offer.price, dicePool: [...run.dicePool, instance] };
 }
 
 export function setLoadout(run: RunState, instanceIds: [string, string]): RunState {

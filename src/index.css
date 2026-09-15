@@ -1,4 +1,31 @@
-:root {
+:root,
+:root[data-skin='casino-gold'] {
+  /* Casino Gold (default skin): warm, light, inviting instead of a dark felt table */
+  --felt: #f6e9cf;
+  --felt-dark: #ecd9ae;
+  --felt-line: #b3892f;
+  --gold: #b3892f;
+  --gold-dim: #8a6a24;
+  --panel: #fffaf0;
+  --panel-light: #fdf2dc;
+  --text: #362a1c;
+  --text-dim: #7a6a54;
+  --win: #2e7d4f;
+  --lose: #b3272a;
+  --push: #a8791f;
+  --shadow: rgba(90, 60, 20, 0.18);
+  --die-bg: #f8f4e8;
+  --die-pip: #2b2015;
+
+  color-scheme: light;
+  color: var(--text);
+  background: var(--felt-dark);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-skin='midnight'] {
+  /* Midnight Felt: the original dark casino-table look */
   --felt: #0b5c34;
   --felt-dark: #073f24;
   --felt-line: #e8c97a;
@@ -12,12 +39,40 @@
   --lose: #ff6b6b;
   --push: #f1c95c;
   --shadow: rgba(0, 0, 0, 0.4);
-
   color-scheme: dark;
-  color: var(--text);
-  background: var(--felt-dark);
-  font-family: 'Georgia', 'Times New Roman', serif;
-  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-skin='neon'] {
+  /* Neon Vegas: high-contrast strip-lights look */
+  --felt: #2a1240;
+  --felt-dark: #180a2b;
+  --felt-line: #ff2fd0;
+  --gold: #ffd23f;
+  --gold-dim: #c9a227;
+  --panel: #23103a;
+  --panel-light: #341654;
+  --text: #f3ecff;
+  --text-dim: #c3aee0;
+  --win: #33f0a0;
+  --lose: #ff3d6e;
+  --push: #ffd23f;
+  --shadow: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+:root[data-dice='ivory'] {
+  --die-bg: #f8f4e8;
+  --die-pip: #2b2015;
+}
+
+:root[data-dice='ruby'] {
+  --die-bg: #7a1424;
+  --die-pip: #ffe9c2;
+}
+
+:root[data-dice='obsidian'] {
+  --die-bg: #1c1c22;
+  --die-pip: #e8c97a;
 }
 
 * {
@@ -133,18 +188,88 @@ h3 {
   gap: 4px;
 }
 
-.progress-track {
-  height: 10px;
-  border-radius: 6px;
-  background: var(--felt-dark);
-  border: 1px solid var(--gold-dim);
-  overflow: hidden;
+.hud-target-label .negative {
+  color: var(--lose);
 }
 
-.progress-fill {
+.dual-gauge-track {
+  display: flex;
+  align-items: stretch;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--gold-dim);
+  background: var(--felt-dark);
+}
+
+.dual-gauge-half {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.dual-gauge-left {
+  justify-content: flex-end;
+}
+
+.dual-gauge-right {
+  justify-content: flex-start;
+}
+
+.dual-gauge-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
   transition: width 0.3s ease;
+}
+
+.dual-gauge-fill-lose {
+  background: linear-gradient(270deg, var(--lose), color-mix(in srgb, var(--lose) 50%, transparent));
+}
+
+.dual-gauge-fill-win {
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+}
+
+.dual-gauge-center-tick {
+  width: 2px;
+  background: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.point-callout {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--panel-light);
+  border: 1px solid var(--gold-dim);
+  font-size: 0.85rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.point-callout-comeout {
+  color: var(--text-dim);
+}
+
+.point-callout-text {
+  color: var(--text-dim);
+}
+
+.point-callout-number {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--gold);
+  background: var(--felt-dark);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cash-out-btn {
@@ -156,18 +281,18 @@ h3 {
   font-weight: bold;
   border: 1px solid var(--win);
   border-radius: 8px;
-  background: rgba(79, 214, 122, 0.15);
+  background: color-mix(in srgb, var(--win) 15%, transparent);
   color: var(--win);
 }
 
 .cash-out-btn:hover {
-  background: rgba(79, 214, 122, 0.25);
+  background: color-mix(in srgb, var(--win) 25%, transparent);
 }
 
 .boss-banner {
   margin-top: 10px;
   padding: 6px 10px;
-  background: rgba(255, 107, 107, 0.15);
+  background: color-mix(in srgb, var(--lose) 15%, transparent);
   border: 1px solid var(--lose);
   border-radius: 6px;
   font-size: 0.85rem;
@@ -185,7 +310,7 @@ h3 {
 .die {
   width: 56px;
   height: 56px;
-  background: var(--text);
+  background: var(--die-bg);
   border-radius: 10px;
   box-shadow: 0 4px 6px var(--shadow);
   padding: 6px;
@@ -225,7 +350,7 @@ h3 {
 
 .pip {
   border-radius: 50%;
-  background: var(--felt-dark);
+  background: var(--die-pip);
   align-self: center;
   justify-self: center;
   width: 60%;
@@ -384,6 +509,11 @@ h3 {
   color: var(--gold);
 }
 
+.bet-spot-odds {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
 .bet-spot-clear {
   position: absolute;
   top: -6px;
@@ -490,14 +620,41 @@ h3 {
   font-size: 0.8rem;
 }
 
-.dice-bag-faces {
-  font-size: 0.75rem;
-  color: var(--text-dim);
-}
-
 .equipped-tag {
   font-size: 0.65rem;
   color: var(--gold);
+}
+
+.die-faces-row {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.die-face-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--felt-dark);
+  border: 1px solid var(--gold-dim);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.die-face-badge-wild {
+  background: var(--gold);
+  color: var(--felt-dark);
+  border-color: var(--gold);
+}
+
+.comp-points {
+  color: var(--gold);
+  font-weight: bold;
 }
 
 /* Shop */
@@ -589,4 +746,159 @@ h3 {
 
 .end-title.lose {
   color: var(--lose);
+}
+
+/* Cosmetics / achievements */
+.cosmetics-toggle {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.78rem;
+}
+
+.cosmetics-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px 12px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.cosmetics-modal {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cosmetics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cosmetics-header h2 {
+  font-size: 1.1rem;
+  color: var(--gold);
+}
+
+.cosmetics-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-dim);
+  background: transparent;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.cosmetics-section-title {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swatch {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid;
+  font-size: 0.78rem;
+  font-weight: bold;
+  min-width: 90px;
+}
+
+.swatch-selected {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+.swatch-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.achievement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.achievement-list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--panel-light);
+  border: 1px solid var(--gold-dim);
+}
+
+.achievement-locked {
+  opacity: 0.65;
+}
+
+.achievement-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.achievement-name {
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.achievement-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.achievement-reward {
+  font-size: 0.72rem;
+  color: var(--gold);
+}
+
+.unlock-toast {
+  position: sticky;
+  top: 8px;
+  z-index: 40;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--win) 20%, var(--panel));
+  border: 1px solid var(--win);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.unlock-toast-close {
+  align-self: flex-end;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--win);
+  background: transparent;
+  color: var(--win);
+  font-size: 0.75rem;
 }

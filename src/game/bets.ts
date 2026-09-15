@@ -29,6 +29,10 @@ export const BASE_ODDS: Record<BetKind, [number, number]> = {
   hard8: [9, 1],
   anyCraps: [7, 1],
   anySeven: [4, 1],
+  horn2: [30, 1],
+  horn12: [30, 1],
+  horn3: [15, 1],
+  horn11: [15, 1],
 };
 
 export const BET_LABELS: Record<BetKind, string> = {
@@ -49,6 +53,17 @@ export const BET_LABELS: Record<BetKind, string> = {
   hard10: 'Hard 10',
   anyCraps: 'Any Craps',
   anySeven: 'Any Seven',
+  horn2: 'Horn 2',
+  horn3: 'Horn 3',
+  horn11: 'Horn 11',
+  horn12: 'Horn 12',
+};
+
+const HORN_NUMBER: Partial<Record<BetKind, number>> = {
+  horn2: 2,
+  horn3: 3,
+  horn11: 11,
+  horn12: 12,
 };
 
 const PLACE_NUMBER: Partial<Record<BetKind, number>> = {
@@ -290,6 +305,21 @@ function resolveProp(
 
   if (bet.kind === 'anyCraps') {
     if ([2, 3, 12].includes(total)) {
+      const roll: RollResult = { dice: [0, 0], total };
+      return {
+        betId: bet.id,
+        kind: bet.kind,
+        amount: bet.amount,
+        result: 'win',
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+      };
+    }
+    return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
+  }
+
+  const hornNum = HORN_NUMBER[bet.kind];
+  if (hornNum !== undefined) {
+    if (total === hornNum) {
       const roll: RollResult = { dice: [0, 0], total };
       return {
         betId: bet.id,

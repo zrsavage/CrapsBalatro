@@ -14,6 +14,8 @@ import {
 } from '../game/engine';
 import { generateShop } from '../game/shop';
 import { playDiceRoll, playLose, playNeutral, playWin, primeAudio } from '../game/sound';
+import { checkAchievements } from '../data/achievements';
+import { useCosmeticsStore } from './cosmeticsStore';
 
 const ROLL_ANIMATION_MS = 950;
 
@@ -74,6 +76,9 @@ export const useGameStore = create<GameStore>((set, get) => {
 
         const shop = next.phase === 'shop' ? generateShop(next, get().rng) : null;
         set({ run: next, shop, isRolling: false, pendingRoll: null });
+
+        const unlocked = checkAchievements(run, next, outcome, new Set(useCosmeticsStore.getState().unlockedAchievements));
+        useCosmeticsStore.getState().unlockAchievements(unlocked);
       }, ROLL_ANIMATION_MS);
     },
 
@@ -85,6 +90,9 @@ export const useGameStore = create<GameStore>((set, get) => {
       playWin();
       const shop = next.phase === 'shop' ? generateShop(next, rng) : null;
       set({ run: next, shop });
+
+      const unlocked = checkAchievements(run, next, undefined, new Set(useCosmeticsStore.getState().unlockedAchievements));
+      useCosmeticsStore.getState().unlockAchievements(unlocked);
     },
 
     enterShopIfNeeded: () => {
@@ -106,8 +114,8 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     rerollShop: () => {
       const { run, rng, shop } = get();
-      if (!shop || run.bankroll < shop.rerollCost) return;
-      const next = { ...run, bankroll: run.bankroll - shop.rerollCost };
+      if (!shop || run.comps < shop.rerollCost) return;
+      const next = { ...run, comps: run.comps - shop.rerollCost };
       set({ run: next, shop: generateShop(next, rng) });
     },
 

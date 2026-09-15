@@ -38,7 +38,7 @@ export function generateShop(run: RunState, rng: () => number): ShopState {
 }
 
 export function canAfford(run: RunState, price: number): boolean {
-  return run.bankroll >= price;
+  return run.comps >= price;
 }
 
 export function makeRelicInstance(defId: string): RelicInstance {

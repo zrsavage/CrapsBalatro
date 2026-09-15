@@ -1,9 +1,6 @@
 import type { RunState } from '../game/types';
 import { getDieDef } from '../data/dice';
-
-function faceLabel(face: number | 'wild'): string {
-  return face === 'wild' ? '★' : String(face);
-}
+import { DieFaces } from './DieFaces';
 
 export function DiceBag({
   run,
@@ -34,7 +31,7 @@ export function DiceBag({
               title={def.description}
             >
               <span className="dice-bag-name">{def.name}</span>
-              <span className="dice-bag-faces">{def.faces.map(faceLabel).join(' ')}</span>
+              <DieFaces faces={def.faces} />
               {equipped && <span className="equipped-tag">Equipped</span>}
             </button>
           );

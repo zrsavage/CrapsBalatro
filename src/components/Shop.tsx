@@ -2,6 +2,7 @@ import type { RunState, ShopOffer, ShopState } from '../game/types';
 import { getRelicDef } from '../data/relics';
 import { getDieDef } from '../data/dice';
 import { DiceBag } from './DiceBag';
+import { DieFaces } from './DieFaces';
 
 export function Shop({
   run,
@@ -21,7 +22,9 @@ export function Shop({
   return (
     <div className="panel shop">
       <h2 className="shop-title">Shop — Ante {run.ante}</h2>
-      <p className="shop-bankroll">Bankroll: ${run.bankroll}</p>
+      <p className="shop-bankroll">
+        <span className="comp-points">{run.comps} CP</span> to spend · Bankroll: ${run.bankroll}
+      </p>
 
       <div className="shop-offers">
         {shop.offers.map((offer) => (
@@ -30,8 +33,8 @@ export function Shop({
       </div>
 
       <div className="shop-actions">
-        <button className="secondary-btn" onClick={onReroll} disabled={run.bankroll < shop.rerollCost}>
-          Reroll (${shop.rerollCost})
+        <button className="secondary-btn" onClick={onReroll} disabled={run.comps < shop.rerollCost}>
+          Reroll ({shop.rerollCost} CP)
         </button>
       </div>
 
@@ -59,15 +62,16 @@ function OfferCard({
   const desc = relicDef?.description ?? dieDef?.description ?? '';
   const rarity = relicDef?.rarity ?? dieDef?.rarity ?? 'common';
   const relicsFull = offer.type === 'relic' && run.relics.length >= run.relicSlots;
-  const canAfford = run.bankroll >= offer.price;
+  const canAfford = run.comps >= offer.price;
 
   return (
     <div className={`offer-card rarity-${rarity}`}>
       <div className="offer-type">{offer.type === 'relic' ? 'Relic' : 'Die'}</div>
       <div className="offer-name">{name}</div>
+      {dieDef && <DieFaces faces={dieDef.faces} />}
       <div className="offer-desc">{desc}</div>
       <button className="offer-buy" disabled={!canAfford || relicsFull} onClick={() => onBuy(offer)}>
-        {relicsFull ? 'Slots Full' : `Buy $${offer.price}`}
+        {relicsFull ? 'Slots Full' : `Buy ${offer.price} CP`}
       </button>
     </div>
   );
