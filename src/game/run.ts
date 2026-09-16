@@ -18,6 +18,14 @@ function modifierChance(ante: number): number {
   return Math.min(0.6, 0.1 + ante * 0.06);
 }
 
+/** How many physical dice the player rolls each turn — the board grows as
+ * the ante climbs: 2 dice through Ante 2, 3 from Ante 3, 4 from Ante 6. */
+export function diceCountForAnte(ante: number): number {
+  if (ante >= 6) return 4;
+  if (ante >= 3) return 3;
+  return 2;
+}
+
 function roundKindFor(roundIndex: number): RoundKind {
   if (roundIndex === 0) return 'comeOut';
   if (roundIndex === 1) return 'point';

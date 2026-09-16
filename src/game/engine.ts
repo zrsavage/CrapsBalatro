@@ -11,7 +11,7 @@ import { rollDice } from './dice';
 import { getDieDef } from '../data/dice';
 import { getRelicDef } from '../data/relics';
 import { getModifierDef } from '../data/modifiers';
-import { buildRoundDef, compsForClearingRound, nextRoundCoords, RELIC_SLOTS } from './run';
+import { buildRoundDef, compsForClearingRound, diceCountForAnte, nextRoundCoords, RELIC_SLOTS } from './run';
 
 export const MIN_BET = 5;
 
@@ -220,7 +220,10 @@ export function endRoundEarly(run: RunState): RunState {
   return finalizeSuccess(cleared);
 }
 
-/** Called when the player leaves the shop to start the next round. */
+/** Called when the player leaves the shop to start the next round. Also
+ * grows the dice pool/loadout automatically when the new ante's dice count
+ * exceeds what's currently equipped, so the board gets bigger at Ante 3
+ * and Ante 6 without any purchase required. */
 export function startNextRound(run: RunState, rng: () => number): RunState {
   const nextCoords = nextRoundCoords(run.ante, run.roundIndex);
   if (!nextCoords) return run;
@@ -232,6 +235,15 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
     if (def?.bonusRolls) bonusRolls += def.bonusRolls;
   }
 
+  let dicePool = run.dicePool;
+  let loadout = run.loadout;
+  const requiredDice = diceCountForAnte(nextCoords.ante);
+  while (loadout.length < requiredDice) {
+    const newDie = { instanceId: `die-standard-auto-${nextCoords.ante}-${loadout.length}`, defId: 'standard' };
+    dicePool = [...dicePool, newDie];
+    loadout = [...loadout, newDie.instanceId];
+  }
+
   return {
     ...run,
     ante: nextCoords.ante,
@@ -241,14 +253,16 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
     rollsRemaining: round.rollLimit + bonusRolls,
     shooter: { phase: 'comeOut', point: null },
     activeBets: [],
+    dicePool,
+    loadout,
     phase: 'run',
   };
 }
 
-/** How many dice the player rolls each turn — 2 normally, 3 once the Third
- * Wheel relic is owned. */
+/** How many dice the player rolls each turn — grows automatically with
+ * ante (see `diceCountForAnte`). */
 export function effectiveDiceCount(run: RunState): number {
-  return run.relics.some((inst) => getRelicDef(inst.defId)?.addsThirdDie) ? 3 : 2;
+  return diceCountForAnte(run.ante);
 }
 
 export function buyOffer(run: RunState, offer: ShopOffer): RunState {
@@ -258,20 +272,11 @@ export function buyOffer(run: RunState, offer: ShopOffer): RunState {
     const instance = { instanceId: `relic-${offer.refId}-${Date.now()}`, defId: offer.refId };
     const def = getRelicDef(offer.refId);
     const bonus = def?.bonusOnAcquire ?? 0;
-    let dicePool = run.dicePool;
-    let loadout = run.loadout;
-    if (def?.addsThirdDie && loadout.length < 3) {
-      const thirdDie = { instanceId: `die-standard-third-${Date.now()}`, defId: 'standard' };
-      dicePool = [...dicePool, thirdDie];
-      loadout = [...loadout, thirdDie.instanceId];
-    }
     return {
       ...run,
       comps: run.comps - offer.price,
       bankroll: run.bankroll + bonus,
       relics: [...run.relics, instance],
-      dicePool,
-      loadout,
     };
   }
   const instance = { instanceId: `die-${offer.refId}-${Date.now()}`, defId: offer.refId };

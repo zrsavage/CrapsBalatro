@@ -66,11 +66,11 @@ export interface ShooterState {
 }
 
 export interface RollResult {
-  /** Every physical die rolled this turn (2, or 3 with the Third Wheel relic). */
+  /** Every physical die rolled this turn (2 through Ante 2, 3 from Ante 3, 4 from Ante 6). */
   dice: number[];
   /** The two dice that actually count toward the total — both dice
-   * normally, or the best two of three (lowest dropped) with a third die
-   * in play. Hard-way bets check this pair, not the raw `dice` array. */
+   * normally, or the best two of N (lowest dropped) once the board grows
+   * past two dice. Hard-way bets check this pair, not the raw `dice` array. */
   countedDice: [number, number];
   total: number;
 }
@@ -112,9 +112,6 @@ export interface RelicDef {
   bonusRolls?: number;
   /** One-time bankroll bonus granted the moment this relic is acquired. */
   bonusOnAcquire?: number;
-  /** Adds a third die to every roll; the total becomes the best two of the
-   * three (lowest dropped). Owning more than one has no additional effect. */
-  addsThirdDie?: boolean;
   /** Called once when a new round begins. */
   onRoundStart?: (ctx: RelicHookContext) => void;
 }
@@ -167,7 +164,7 @@ export interface RunState {
   shooter: ShooterState;
   activeBets: ActiveBet[];
   dicePool: DiceInstance[];
-  loadout: string[]; // instanceIds of equipped dice — 2 normally, 3 with the Third Wheel relic
+  loadout: string[]; // instanceIds of equipped dice — grows automatically with ante (see diceCountForAnte)
   relics: RelicInstance[];
   relicSlots: number;
   phase: GamePhase;

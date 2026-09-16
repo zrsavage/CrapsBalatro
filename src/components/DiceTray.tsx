@@ -10,28 +10,29 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
   const isRolling = useGameStore((s) => s.isRolling);
   const pendingRoll = useGameStore((s) => s.pendingRoll);
   const last = run.history[run.history.length - 1];
-  const diceCount = pendingRoll?.dice.length ?? last?.roll.dice.length ?? run.loadout.length;
-  const restingDice: number[] = last?.roll.dice ?? Array(diceCount).fill(1);
-  const [displayDice, setDisplayDice] = useState<number[]>(restingDice);
+  // The current loadout is the source of truth for dice count — it can
+  // change (ante escalation) between rounds before a new roll happens, so
+  // a stale `last` roll from a smaller/larger board must never override it.
+  const diceCount = run.loadout.length;
+  const restingDice: number[] =
+    last && last.roll.dice.length === diceCount ? last.roll.dice : Array(diceCount).fill(1);
+  const [animatedDice, setAnimatedDice] = useState<number[] | null>(null);
+  const displayDice = isRolling ? (animatedDice ?? restingDice) : restingDice;
 
   useEffect(() => {
-    if (!isRolling || !pendingRoll) {
-      setDisplayDice(restingDice);
-      return;
-    }
+    if (!isRolling || !pendingRoll) return; // nothing to animate right now
     let ticks = 0;
     const totalTicks = 8;
     const interval = setInterval(() => {
       ticks += 1;
       if (ticks >= totalTicks) {
-        setDisplayDice(pendingRoll.dice);
+        setAnimatedDice(pendingRoll.dice);
         clearInterval(interval);
         return;
       }
-      setDisplayDice(pendingRoll.dice.map(() => 1 + Math.floor(Math.random() * 6)));
+      setAnimatedDice(pendingRoll.dice.map(() => 1 + Math.floor(Math.random() * 6)));
     }, SPIN_TICK_MS);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRolling, pendingRoll]);
 
   const canRoll = run.phase === 'run' && run.rollsRemaining > 0 && !isRolling;
@@ -45,7 +46,7 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
         ))}
         <div className="dice-total">{shownTotal ?? '–'}</div>
       </div>
-      {diceCount > 2 && <div className="dice-hint">Best two of three count toward your total.</div>}
+      {diceCount > 2 && <div className="dice-hint">Best two of {diceCount} count toward your total.</div>}
       <button className="roll-btn" onClick={onRoll} disabled={!canRoll}>
         {isRolling ? 'Rolling…' : run.rollsRemaining > 0 ? `Roll (${run.rollsRemaining} left)` : 'No Rolls Left'}
       </button>
