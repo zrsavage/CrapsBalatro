@@ -3,17 +3,18 @@ import { useGameStore } from './state/store';
 import { useCosmeticsStore } from './state/cosmeticsStore';
 import { Hud } from './components/Hud';
 import { DiceTray } from './components/DiceTray';
+import { TableView } from './components/TableView';
 import { BettingTable } from './components/BettingTable';
 import { RelicBar } from './components/RelicBar';
 import { DiceBag } from './components/DiceBag';
 import { Shop } from './components/Shop';
 import { EndScreen } from './components/EndScreen';
 import { CosmeticsPanel } from './components/CosmeticsPanel';
-import { UnlockToast } from './components/UnlockToast';
 
 function App() {
   const run = useGameStore((s) => s.run);
   const shop = useGameStore((s) => s.shop);
+  const runAchievements = useGameStore((s) => s.runAchievements);
   const placeBet = useGameStore((s) => s.placeBet);
   const removeBetsOfKind = useGameStore((s) => s.removeBetsOfKind);
   const roll = useGameStore((s) => s.roll);
@@ -43,10 +44,8 @@ function App() {
         <CosmeticsPanel />
       </div>
 
-      <UnlockToast />
-
       {(run.phase === 'gameOver' || run.phase === 'victory') && run.lastRunSummary && (
-        <EndScreen summary={run.lastRunSummary} onRestart={restartRun} />
+        <EndScreen summary={run.lastRunSummary} runAchievements={runAchievements} onRestart={restartRun} />
       )}
 
       {run.phase === 'shop' && shop && (
@@ -64,6 +63,7 @@ function App() {
         <>
           <Hud run={run} onCashOut={cashOutRound} />
           <DiceTray run={run} onRoll={roll} />
+          <TableView activeBets={run.activeBets} onClear={removeBetsOfKind} />
           <BettingTable run={run} onPlace={placeBet} onClearKind={removeBetsOfKind} />
           <RelicBar run={run} />
           <DiceBag run={run} onSetLoadout={setLoadout} />

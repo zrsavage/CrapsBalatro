@@ -36,27 +36,28 @@ interface CosmeticsStore {
   unlockedAchievements: string[];
   selectedSkin: string;
   selectedDice: string;
-  lastUnlocked: string[]; // most recent unlock batch, for a toast/announcement
   unlockAchievements: (ids: string[]) => void;
   selectSkin: (id: string) => void;
   selectDice: (id: string) => void;
-  dismissUnlockToast: () => void;
 }
 
+/** Achievements unlock (and persist) the moment they're earned, but the
+ * game store tracks which ones were newly unlocked THIS run separately so
+ * the UI can wait until the run ends to reveal them (see runAchievements
+ * in state/store.ts) rather than popping a toast mid-play. */
 export const useCosmeticsStore = create<CosmeticsStore>((set, get) => {
   const initial = loadPersisted();
   return {
     unlockedAchievements: initial.unlocked,
     selectedSkin: initial.skin,
     selectedDice: initial.dice,
-    lastUnlocked: [],
 
     unlockAchievements: (ids) => {
       if (ids.length === 0) return;
       const { unlockedAchievements, selectedSkin, selectedDice } = get();
       const merged = Array.from(new Set([...unlockedAchievements, ...ids]));
       savePersisted({ unlocked: merged, skin: selectedSkin, dice: selectedDice });
-      set({ unlockedAchievements: merged, lastUnlocked: ids });
+      set({ unlockedAchievements: merged });
     },
 
     selectSkin: (id) => {
@@ -70,7 +71,5 @@ export const useCosmeticsStore = create<CosmeticsStore>((set, get) => {
       savePersisted({ unlocked: unlockedAchievements, skin: selectedSkin, dice: id });
       set({ selectedDice: id });
     },
-
-    dismissUnlockToast: () => set({ lastUnlocked: [] }),
   };
 });

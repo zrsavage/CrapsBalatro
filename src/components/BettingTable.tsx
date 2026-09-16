@@ -3,7 +3,6 @@ import type { BetKind, RunState } from '../game/types';
 import { BASE_ODDS, BET_LABELS, isBetAllowedNow } from '../game/bets';
 import { chipDenominations } from '../game/run';
 import { useGameStore } from '../state/store';
-import { TableMap } from './TableMap';
 
 function oddsLabel(kind: BetKind): string {
   const [num, den] = BASE_ODDS[kind];
@@ -30,7 +29,6 @@ export function BettingTable({
 }) {
   const chipAmounts = chipDenominations(run.ante);
   const [chip, setChip] = useState(chipAmounts[1]);
-  const [showMap, setShowMap] = useState(true);
   useEffect(() => {
     setChip(chipDenominations(run.ante)[1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,11 +57,6 @@ export function BettingTable({
         ))}
         <span className="chip-hint">Tap a spot to bet ${chip}. Bankroll: ${run.bankroll}</span>
       </div>
-
-      <button className="map-toggle" onClick={() => setShowMap((v) => !v)}>
-        {showMap ? 'Hide' : 'Show'} Table View
-      </button>
-      {showMap && <TableMap activeBets={run.activeBets} />}
 
       {SIMPLE_ROWS.map((row) => (
         <div className="bet-row" key={row.title}>

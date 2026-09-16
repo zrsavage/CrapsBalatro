@@ -16,6 +16,8 @@
   --shadow: rgba(90, 60, 20, 0.18);
   --die-bg: #f8f4e8;
   --die-pip: #2b2015;
+  --table-felt: #0f4d34;
+  --table-felt-dark: #093524;
 
   color-scheme: light;
   color: var(--text);
@@ -39,6 +41,8 @@
   --lose: #ff6b6b;
   --push: #f1c95c;
   --shadow: rgba(0, 0, 0, 0.4);
+  --table-felt: #0b5c34;
+  --table-felt-dark: #073f24;
   color-scheme: dark;
 }
 
@@ -57,6 +61,8 @@
   --lose: #ff3d6e;
   --push: #ffd23f;
   --shadow: rgba(0, 0, 0, 0.5);
+  --table-felt: #3a1252;
+  --table-felt-dark: #240a35;
   color-scheme: dark;
 }
 
@@ -75,6 +81,8 @@
   --lose: #ff6b6b;
   --push: #f1c95c;
   --shadow: rgba(0, 0, 0, 0.4);
+  --table-felt: #0d3b2e;
+  --table-felt-dark: #082a20;
   color-scheme: dark;
 }
 
@@ -93,6 +101,8 @@
   --lose: #ff6b6b;
   --push: #f1c95c;
   --shadow: rgba(0, 0, 0, 0.45);
+  --table-felt: #2e1245;
+  --table-felt-dark: #1f0c30;
   color-scheme: dark;
 }
 
@@ -502,90 +512,131 @@ h3 {
   margin-left: auto;
 }
 
-.map-toggle {
+.table-view-panel {
+  padding: 10px;
+}
+
+.table-view {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 320 / 430;
+}
+
+.tv-felt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
-  margin: 4px 0 8px;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--gold-dim);
-  background: transparent;
-  color: var(--text-dim);
-  font-size: 0.75rem;
 }
 
-.table-map {
-  background: var(--felt-dark);
-  border: 2px solid var(--gold-dim);
-  border-radius: 10px;
-  padding: 8px;
-  margin-bottom: 14px;
+.tv-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  justify-content: space-between;
+  padding: 16px 14px;
+  gap: 4px;
 }
 
-.map-group {
+.tv-band {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
-.map-group-title {
+.tv-band-title {
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--gold);
-  opacity: 0.8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  opacity: 0.95;
 }
 
-.map-row {
+.tv-row {
   display: flex;
-  gap: 3px;
+  gap: 5px;
 }
 
-.map-cell {
+.tv-zone {
   position: relative;
   flex: 1;
-  min-height: 30px;
-  border: 1px solid var(--gold-dim);
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--felt) 60%, transparent);
+  min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, white 9%, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3px 2px;
-  gap: 1px;
+  gap: 2px;
 }
 
-.map-cell-wide {
-  flex: 2;
+.tv-cell-wide {
+  flex: 1.8;
 }
 
-.map-cell-label {
+.tv-cell-field {
+  min-height: 30px;
+}
+
+.tv-cell-pass {
+  min-height: 44px;
+}
+
+.tv-band-line {
+  margin-top: 2px;
+}
+
+.tv-zone-label {
   font-size: 0.62rem;
-  color: var(--text-dim);
+  color: #f1ede1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   text-align: center;
   line-height: 1.1;
 }
 
-.map-cell-active {
+.tv-zone-active {
   border-color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold) inset;
+  box-shadow: 0 0 0 1px var(--gold) inset, 0 0 6px color-mix(in srgb, var(--gold) 50%, transparent);
 }
 
-.map-chip {
-  display: inline-flex;
+.tv-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background:
+    radial-gradient(circle, #f8f4e8 60%, transparent 61%),
+    repeating-conic-gradient(var(--gold) 0deg 18deg, #f8f4e8 18deg 36deg);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  padding: 1px 4px;
-  border-radius: 999px;
-  background: var(--gold);
-  color: var(--felt-dark);
-  font-size: 0.6rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tv-chip:disabled {
+  cursor: default;
+}
+
+.tv-chip-amount {
+  font-size: 0.56rem;
   font-weight: bold;
-  line-height: 1.4;
+  color: #2b2015;
+  line-height: 1.1;
+}
+
+.tv-chip-sub {
+  font-size: 0.4rem;
+  color: #6b5a45;
+  line-height: 1;
 }
 
 .bet-row {
@@ -878,6 +929,11 @@ h3 {
 
 .end-title.lose {
   color: var(--lose);
+}
+
+.run-achievements {
+  margin: 14px 0;
+  text-align: left;
 }
 
 /* Cosmetics / achievements */

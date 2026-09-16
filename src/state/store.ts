@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BetKind, RollResult, RunState, ShopOffer, ShopState } from '../game/types';
+import type { BetKind, RollOutcome, RollResult, RunState, ShopOffer, ShopState } from '../game/types';
 import { createInitialRun } from '../game/run';
 import { mulberry32, makeSeed } from '../game/rng';
 import {
@@ -25,6 +25,7 @@ interface GameStore {
   shop: ShopState | null;
   isRolling: boolean;
   pendingRoll: RollResult | null; // the roll dice are animating toward
+  runAchievements: string[]; // achievements earned during the current run, revealed on the EndScreen
   placeBet: (kind: BetKind, amount: number) => void;
   removeBet: (betId: string) => void;
   removeBetsOfKind: (kind: BetKind) => void;
@@ -44,6 +45,21 @@ function freshRun(): { run: RunState; rng: () => number } {
   return { run: createInitialRun(seed, rng), rng };
 }
 
+/** Unlocks any newly-earned achievements (persisted immediately) and folds
+ * their ids into this run's running tally, to be revealed together once
+ * the run ends instead of interrupting play with a toast. */
+function trackAchievements(
+  prevRun: RunState,
+  nextRun: RunState,
+  outcome: RollOutcome | undefined,
+  runAchievements: string[],
+): string[] {
+  const unlocked = checkAchievements(prevRun, nextRun, outcome, new Set(useCosmeticsStore.getState().unlockedAchievements));
+  if (unlocked.length === 0) return runAchievements;
+  useCosmeticsStore.getState().unlockAchievements(unlocked);
+  return Array.from(new Set([...runAchievements, ...unlocked]));
+}
+
 export const useGameStore = create<GameStore>((set, get) => {
   const initial = freshRun();
   return {
@@ -52,6 +68,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     shop: null,
     isRolling: false,
     pendingRoll: null,
+    runAchievements: [],
 
     placeBet: (kind, amount) => set((s) => ({ run: placeBet(s.run, kind, amount) })),
 
@@ -75,10 +92,8 @@ export const useGameStore = create<GameStore>((set, get) => {
         else playNeutral();
 
         const shop = next.phase === 'shop' ? generateShop(next, get().rng) : null;
-        set({ run: next, shop, isRolling: false, pendingRoll: null });
-
-        const unlocked = checkAchievements(run, next, outcome, new Set(useCosmeticsStore.getState().unlockedAchievements));
-        useCosmeticsStore.getState().unlockAchievements(unlocked);
+        const runAchievements = trackAchievements(run, next, outcome, get().runAchievements);
+        set({ run: next, shop, isRolling: false, pendingRoll: null, runAchievements });
       }, ROLL_ANIMATION_MS);
     },
 
@@ -89,10 +104,8 @@ export const useGameStore = create<GameStore>((set, get) => {
       if (next === run) return;
       playWin();
       const shop = next.phase === 'shop' ? generateShop(next, rng) : null;
-      set({ run: next, shop });
-
-      const unlocked = checkAchievements(run, next, undefined, new Set(useCosmeticsStore.getState().unlockedAchievements));
-      useCosmeticsStore.getState().unlockAchievements(unlocked);
+      const runAchievements = trackAchievements(run, next, undefined, get().runAchievements);
+      set({ run: next, shop, runAchievements });
     },
 
     enterShopIfNeeded: () => {
@@ -106,13 +119,12 @@ export const useGameStore = create<GameStore>((set, get) => {
       const { run } = get();
       const next = buyOffer(run, offer);
       if (next === run) return;
+      const runAchievements = trackAchievements(run, next, undefined, get().runAchievements);
       set((s) => ({
         run: next,
         shop: s.shop ? { ...s.shop, offers: s.shop.offers.filter((o) => o.id !== offer.id) } : null,
+        runAchievements,
       }));
-
-      const unlocked = checkAchievements(run, next, undefined, new Set(useCosmeticsStore.getState().unlockedAchievements));
-      useCosmeticsStore.getState().unlockAchievements(unlocked);
     },
 
     rerollShop: () => {
@@ -131,7 +143,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     restartRun: () => {
       const fresh = freshRun();
-      set({ run: fresh.run, rng: fresh.rng, shop: null, isRolling: false, pendingRoll: null });
+      set({ run: fresh.run, rng: fresh.rng, shop: null, isRolling: false, pendingRoll: null, runAchievements: [] });
     },
   };
 });
