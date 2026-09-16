@@ -1,40 +1,52 @@
 import type { ActiveBet, BetKind } from '../game/types';
 
-function Chip({ amount, sub, onClick }: { amount: number; sub?: string; onClick?: () => void }) {
-  return (
-    <button className="tv-chip" onClick={onClick} disabled={!onClick} type="button">
-      <span className="tv-chip-amount">${amount}</span>
-      {sub && <span className="tv-chip-sub">{sub}</span>}
-    </button>
-  );
-}
+const VB_W = 300;
+const VB_H = 272;
 
-function Zone({
-  className,
-  label,
-  kind,
-  totals,
-  onClear,
-}: {
-  className: string;
-  label: string;
+interface Spot {
   kind: BetKind;
-  totals: Map<BetKind, number>;
-  onClear: (kind: BetKind) => void;
-}) {
-  const amount = totals.get(kind) ?? 0;
-  return (
-    <div className={`tv-zone ${className}${amount > 0 ? ' tv-zone-active' : ''}`}>
-      <span className="tv-zone-label">{label}</span>
-      {amount > 0 && <Chip amount={amount} onClick={() => onClear(kind)} />}
-    </div>
-  );
+  label: string;
+  x: number;
+  y: number;
+  size?: number;
+  chipDy?: number;
 }
 
-/** A visual centerpiece companion to the dice: a felt-styled table diagram
- * (SVG shape + gradient) that lights up with a chip wherever the player
- * has money down. Tapping a chip picks that bet back up, mirroring the
- * clear (x) affordance in the button grid below. */
+// Coordinates approximate one lane of a real craps layout, read top
+// (far end, proposition/horn bets) to bottom (the curved rail where Pass
+// Line sits, closest to the shooter).
+const SPOTS: Spot[] = [
+  { kind: 'horn2', label: '2', x: 52, y: 24 },
+  { kind: 'horn3', label: '3', x: 100, y: 24 },
+  { kind: 'horn11', label: '11', x: 200, y: 24 },
+  { kind: 'horn12', label: '12', x: 248, y: 24 },
+  { kind: 'anyCraps', label: 'ANY CRAPS', x: 95, y: 43, size: 7, chipDy: 19 },
+  { kind: 'anySeven', label: 'ANY SEVEN', x: 205, y: 43, size: 7, chipDy: 19 },
+  { kind: 'hard4', label: 'H4', x: 58, y: 78 },
+  { kind: 'hard6', label: 'H6', x: 119, y: 78 },
+  { kind: 'hard8', label: 'H8', x: 181, y: 78 },
+  { kind: 'hard10', label: 'H10', x: 242, y: 78 },
+  { kind: 'field', label: 'FIELD', x: 150, y: 112, size: 11 },
+  { kind: 'place4', label: '4', x: 40, y: 150 },
+  { kind: 'place5', label: '5', x: 84, y: 150 },
+  { kind: 'place6', label: '6', x: 128, y: 150 },
+  { kind: 'place8', label: '8', x: 172, y: 150 },
+  { kind: 'place9', label: '9', x: 216, y: 150 },
+  { kind: 'place10', label: '10', x: 260, y: 150 },
+  { kind: 'come', label: 'COME', x: 110, y: 190, size: 11, chipDy: 16 },
+  { kind: 'dontCome', label: "DON'T COME", x: 240, y: 190, size: 6.5, chipDy: 16 },
+  { kind: 'dontPass', label: "DON'T PASS BAR", x: 150, y: 232, size: 6.5, chipDy: 8 },
+  { kind: 'pass', label: 'PASS LINE', x: 150, y: 254, size: 9.5, chipDy: 10 },
+];
+
+function pct(v: number, of: number): string {
+  return `${(v / of) * 100}%`;
+}
+
+/** A small, purely visual reference diagram of a craps table — not an
+ * input surface. Everything printed on the felt (lines, numbers, labels)
+ * is drawn in SVG; the only overlay is a chip marker wherever the player
+ * currently has money down, tappable to pick that bet back up. */
 export function TableView({
   activeBets,
   onClear,
@@ -46,105 +58,60 @@ export function TableView({
   for (const bet of activeBets) {
     totals.set(bet.kind, (totals.get(bet.kind) ?? 0) + bet.amount);
   }
-  const comeBets = activeBets.filter((b) => b.kind === 'come' || b.kind === 'dontCome');
-  const comeOn = comeBets.filter((b) => b.kind === 'come');
-  const dontComeOn = comeBets.filter((b) => b.kind === 'dontCome');
 
   return (
     <div className="panel table-view-panel">
+      <span className="table-view-title">Table</span>
       <div className="table-view">
-        <svg className="tv-felt" viewBox="0 0 320 430" preserveAspectRatio="none" aria-hidden="true">
+        <svg className="tv-felt" viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid meet">
           <defs>
-            <radialGradient id="tvFeltGrad" cx="50%" cy="30%" r="80%">
+            <radialGradient id="tvFeltGrad" cx="50%" cy="25%" r="85%">
               <stop offset="0%" stopColor="var(--table-felt)" />
               <stop offset="100%" stopColor="var(--table-felt-dark)" />
             </radialGradient>
           </defs>
-          <rect x="5" y="5" width="310" height="420" rx="34" ry="34" fill="url(#tvFeltGrad)" stroke="var(--gold)" strokeWidth="4" />
-          <rect
-            x="15"
-            y="15"
-            width="290"
-            height="400"
-            rx="26"
-            ry="26"
-            fill="none"
-            stroke="var(--gold-dim)"
-            strokeWidth="1.5"
-            strokeDasharray="2 4"
-            opacity="0.6"
-          />
+
+          <rect x="4" y="4" width={VB_W - 8} height={VB_H - 8} rx="26" ry="26" fill="url(#tvFeltGrad)" stroke="var(--gold)" strokeWidth="3" />
+
+          {/* printed divider lines between bet zones, not boxed buttons */}
+          <line x1="16" y1="58" x2={VB_W - 16} y2="58" className="tv-line" />
+          <line x1="16" y1="96" x2={VB_W - 16} y2="96" className="tv-line" />
+          <line x1="16" y1="130" x2={VB_W - 16} y2="130" className="tv-line" />
+          <line x1="16" y1="168" x2={VB_W - 16} y2="168" className="tv-line" />
+          <line x1="16" y1="212" x2={VB_W - 16} y2="212" className="tv-line" />
+          <line x1="16" y1="240" x2={VB_W - 16} y2="240" className="tv-line" />
+          <path d={`M 16 240 Q ${VB_W / 2} 268 ${VB_W - 16} 240`} className="tv-line" fill="none" />
+          <line x1="170" y1="168" x2="170" y2="212" className="tv-line" />
+
+          <text x={VB_W / 2} y="14" className="tv-svg-caption">
+            HORN · HARD WAYS
+          </text>
+          <text x={VB_W / 2} y="140" className="tv-svg-caption">
+            PLACE TO WIN
+          </text>
+
+          {SPOTS.map((s) => (
+            <text key={s.kind} x={s.x} y={s.y} textAnchor="middle" className="tv-svg-label" style={{ fontSize: s.size ?? 13 }}>
+              {s.label}
+            </text>
+          ))}
         </svg>
 
-        <div className="tv-overlay">
-          <div className="tv-band">
-            <span className="tv-band-title">Horn</span>
-            <div className="tv-row">
-              <Zone className="tv-cell" label="2" kind="horn2" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="3" kind="horn3" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="11" kind="horn11" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="12" kind="horn12" totals={totals} onClear={onClear} />
-            </div>
-          </div>
-
-          <div className="tv-band">
-            <div className="tv-row">
-              <Zone className="tv-cell tv-cell-wide" label="Any Craps" kind="anyCraps" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell tv-cell-wide" label="Any Seven" kind="anySeven" totals={totals} onClear={onClear} />
-            </div>
-          </div>
-
-          <div className="tv-band">
-            <span className="tv-band-title">Hard Ways</span>
-            <div className="tv-row">
-              <Zone className="tv-cell" label="H4" kind="hard4" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="H6" kind="hard6" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="H8" kind="hard8" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="H10" kind="hard10" totals={totals} onClear={onClear} />
-            </div>
-          </div>
-
-          <div className="tv-band">
-            <div className="tv-row">
-              <Zone className="tv-cell tv-cell-field" label="Field" kind="field" totals={totals} onClear={onClear} />
-            </div>
-          </div>
-
-          <div className="tv-band">
-            <span className="tv-band-title">Place</span>
-            <div className="tv-row">
-              <Zone className="tv-cell" label="4" kind="place4" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="5" kind="place5" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="6" kind="place6" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="8" kind="place8" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="9" kind="place9" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell" label="10" kind="place10" totals={totals} onClear={onClear} />
-            </div>
-          </div>
-
-          <div className="tv-band">
-            <div className="tv-row">
-              <div className="tv-zone tv-cell tv-cell-wide">
-                <span className="tv-zone-label">Come</span>
-                {comeOn.map((b) => (
-                  <Chip key={b.id} amount={b.amount} sub={b.point !== undefined ? `on ${b.point}` : 'coming'} />
-                ))}
-              </div>
-              <div className="tv-zone tv-cell">
-                <span className="tv-zone-label">Don't Come</span>
-                {dontComeOn.map((b) => (
-                  <Chip key={b.id} amount={b.amount} sub={b.point !== undefined ? `on ${b.point}` : 'coming'} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="tv-band tv-band-line">
-            <div className="tv-row">
-              <Zone className="tv-cell tv-cell-wide tv-cell-pass" label="Pass Line" kind="pass" totals={totals} onClear={onClear} />
-              <Zone className="tv-cell tv-cell-pass" label="Don't Pass" kind="dontPass" totals={totals} onClear={onClear} />
-            </div>
-          </div>
+        <div className="tv-chip-layer">
+          {SPOTS.filter((s) => (totals.get(s.kind) ?? 0) > 0).map((s) => {
+            const amount = totals.get(s.kind) ?? 0;
+            return (
+              <button
+                key={s.kind}
+                className="tv-chip"
+                style={{ left: pct(s.x, VB_W), top: pct(s.y + (s.chipDy ?? 14), VB_H) }}
+                onClick={() => onClear(s.kind)}
+                aria-label={`Pick up ${s.label} bet`}
+              >
+                ${amount}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
