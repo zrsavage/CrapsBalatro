@@ -12,9 +12,13 @@ function nextOfferId(): string {
   return `offer-${offerCounter}`;
 }
 
+const THIRD_WHEEL_MIN_ANTE = 4;
+
 export function generateShop(run: RunState, rng: () => number): ShopState {
   const ownedRelicIds = new Set(run.relics.map((r) => r.defId));
-  const availableRelics = RELIC_CATALOG.filter((r) => !ownedRelicIds.has(r.id));
+  const availableRelics = RELIC_CATALOG.filter(
+    (r) => !ownedRelicIds.has(r.id) && (r.id !== 'third_wheel' || run.ante >= THIRD_WHEEL_MIN_ANTE),
+  );
 
   const relicOffers: ShopOffer[] = [];
   const pool = [...availableRelics];

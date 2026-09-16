@@ -1,5 +1,5 @@
 import type { RunState } from '../game/types';
-import { BOSS_EFFECT_LABELS } from '../game/run';
+import { getModifierDef } from '../data/modifiers';
 import { canEndRoundEarly, earlyCashOutBonusPerRoll } from '../game/engine';
 
 const ROUND_NAMES = ['Round 1 of 3', 'Round 2 of 3', 'Boss Round'];
@@ -73,8 +73,8 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
           Cash Out Now — bank the win +${cashOutBonus} bonus
         </button>
       )}
-      {run.currentRound.bossEffect && (
-        <div className="boss-banner">⚠ {BOSS_EFFECT_LABELS[run.currentRound.bossEffect]}</div>
+      {run.currentRound.modifier && (
+        <div className="boss-banner">⚠ {getModifierDef(run.currentRound.modifier)?.label}</div>
       )}
     </div>
   );

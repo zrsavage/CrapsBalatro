@@ -34,7 +34,7 @@ interface GameStore {
   enterShopIfNeeded: () => void;
   buy: (offer: ShopOffer) => void;
   rerollShop: () => void;
-  setLoadout: (ids: [string, string]) => void;
+  setLoadout: (ids: string[]) => void;
   continueToNextRound: () => void;
   restartRun: () => void;
 }

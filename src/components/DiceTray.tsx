@@ -10,8 +10,9 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
   const isRolling = useGameStore((s) => s.isRolling);
   const pendingRoll = useGameStore((s) => s.pendingRoll);
   const last = run.history[run.history.length - 1];
-  const restingDice: [number, number] = last?.roll.dice ?? [1, 1];
-  const [displayDice, setDisplayDice] = useState<[number, number]>(restingDice);
+  const diceCount = pendingRoll?.dice.length ?? last?.roll.dice.length ?? run.loadout.length;
+  const restingDice: number[] = last?.roll.dice ?? Array(diceCount).fill(1);
+  const [displayDice, setDisplayDice] = useState<number[]>(restingDice);
 
   useEffect(() => {
     if (!isRolling || !pendingRoll) {
@@ -27,21 +28,24 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
         clearInterval(interval);
         return;
       }
-      setDisplayDice([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]);
+      setDisplayDice(pendingRoll.dice.map(() => 1 + Math.floor(Math.random() * 6)));
     }, SPIN_TICK_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRolling, pendingRoll]);
 
   const canRoll = run.phase === 'run' && run.rollsRemaining > 0 && !isRolling;
+  const shownTotal = isRolling ? pendingRoll?.total : last?.roll.total;
 
   return (
     <div className="panel dice-tray">
       <div className="dice-row">
-        <Die value={displayDice[0]} rolling={isRolling} />
-        <Die value={displayDice[1]} rolling={isRolling} />
-        <div className="dice-total">{last || isRolling ? displayDice[0] + displayDice[1] : '–'}</div>
+        {displayDice.map((v, i) => (
+          <Die key={i} value={v} rolling={isRolling} />
+        ))}
+        <div className="dice-total">{shownTotal ?? '–'}</div>
       </div>
+      {diceCount > 2 && <div className="dice-hint">Best two of three count toward your total.</div>}
       <button className="roll-btn" onClick={onRoll} disabled={!canRoll}>
         {isRolling ? 'Rolling…' : run.rollsRemaining > 0 ? `Roll (${run.rollsRemaining} left)` : 'No Rolls Left'}
       </button>

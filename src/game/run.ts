@@ -1,5 +1,6 @@
-import type { BossEffectId, DiceInstance, RoundDef, RoundKind, RunState } from './types';
+import type { DiceInstance, RoundDef, RoundKind, RunState } from './types';
 import { randInt } from './rng';
+import { getModifierDef, MODIFIERS } from '../data/modifiers';
 
 export const ANTE_COUNT = 8;
 export const ROUNDS_PER_ANTE = 3;
@@ -8,15 +9,14 @@ export const STARTING_BANKROLL = 500;
 export const STARTING_COMPS = 15;
 export const BASE_TARGET = 40;
 export const RELIC_SLOTS = 5;
+const MIN_ROLL_LIMIT = 6;
 
-const BOSS_EFFECTS: BossEffectId[] = ['coldTable', 'noSevens', 'shortRolls', 'fieldFreeze'];
-
-export const BOSS_EFFECT_LABELS: Record<BossEffectId, string> = {
-  coldTable: 'Cold Table: all payouts -25%',
-  noSevens: "No Sevens: Any Seven bet is disabled",
-  shortRolls: 'Short Rolls: 3 fewer rolls this round',
-  fieldFreeze: 'Field Freeze: Field bet is disabled',
-};
+/** Probability a non-boss round also gets a random modifier, rising with
+ * ante so early rounds stay simple and late rounds keep players on their
+ * toes. Boss rounds always get one. */
+function modifierChance(ante: number): number {
+  return Math.min(0.6, 0.1 + ante * 0.06);
+}
 
 function roundKindFor(roundIndex: number): RoundKind {
   if (roundIndex === 0) return 'comeOut';
@@ -33,13 +33,16 @@ const ROUND_MULTIPLIER = [1, 1.3, 1.7];
 export function buildRoundDef(ante: number, roundIndex: number, rng: () => number): RoundDef {
   const kind = roundKindFor(roundIndex);
   const target = Math.round(BASE_TARGET * anteMultiplier(ante) * ROUND_MULTIPLIER[roundIndex]);
-  let rollLimit = BASE_ROLL_LIMIT;
-  let bossEffect: BossEffectId | undefined;
-  if (kind === 'boss') {
-    bossEffect = BOSS_EFFECTS[randInt(rng, 0, BOSS_EFFECTS.length - 1)];
-    if (bossEffect === 'shortRolls') rollLimit -= 3;
+
+  let modifier = undefined as RoundDef['modifier'];
+  if (kind === 'boss' || rng() < modifierChance(ante)) {
+    modifier = MODIFIERS[randInt(rng, 0, MODIFIERS.length - 1)].id;
   }
-  return { ante, roundIndex, kind, target, rollLimit, bossEffect };
+
+  const delta = getModifierDef(modifier)?.rollLimitDelta ?? 0;
+  const rollLimit = Math.max(MIN_ROLL_LIMIT, BASE_ROLL_LIMIT + delta);
+
+  return { ante, roundIndex, kind, target, rollLimit, modifier };
 }
 
 export function createInitialRun(seed: number, rng: () => number): RunState {

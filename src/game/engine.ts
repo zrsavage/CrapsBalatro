@@ -10,6 +10,7 @@ import { isBetAllowedNow, resolveRoll } from './bets';
 import { rollDice } from './dice';
 import { getDieDef } from '../data/dice';
 import { getRelicDef } from '../data/relics';
+import { getModifierDef } from '../data/modifiers';
 import { buildRoundDef, compsForClearingRound, nextRoundCoords, RELIC_SLOTS } from './run';
 
 export const MIN_BET = 5;
@@ -20,10 +21,15 @@ function nextBetId(): string {
   return `bet-${betCounter}`;
 }
 
+export function minBetFor(run: RunState): number {
+  const mult = getModifierDef(run.currentRound.modifier)?.minBetMultiplier ?? 1;
+  return MIN_BET * mult;
+}
+
 export function placeBet(run: RunState, kind: BetKind, amount: number): RunState {
-  if (amount < MIN_BET) return run;
+  if (amount < minBetFor(run)) return run;
   if (amount > run.bankroll) return run;
-  if (!isBetAllowedNow(kind, run.shooter)) return run;
+  if (!isBetAllowedNow(kind, run.shooter, run.currentRound.modifier)) return run;
   if (run.rollsRemaining <= 0 || run.phase !== 'run') return run;
 
   const bet: ActiveBet = { id: nextBetId(), kind, amount };
@@ -73,18 +79,15 @@ export function rollOnce(run: RunState, rng: () => number): { run: RunState; out
     const inst = run.dicePool.find((d) => d.instanceId === instanceId);
     return getDieDef(inst?.defId ?? 'standard') ?? getDieDef('standard')!;
   });
-  const faces: [DieFace, DieFace] = [
-    pickFace(diceDefs[0].faces, rng),
-    pickFace(diceDefs[1].faces, rng),
-  ];
+  const faces: DieFace[] = diceDefs.map((def) => pickFace(def.faces, rng));
 
-  const roll = rollDice(faces, run.activeBets, run.shooter, run.relics, run.currentRound.bossEffect, rng);
+  const roll = rollDice(faces, run.activeBets, run.shooter, run.relics, run.currentRound.modifier, rng);
   const { resolutions, shooterAfter } = resolveRoll(
     run.activeBets,
     roll,
     run.shooter,
     run.relics,
-    run.currentRound.bossEffect,
+    run.currentRound.modifier,
   );
 
   let bankroll = run.bankroll;
@@ -242,6 +245,12 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
   };
 }
 
+/** How many dice the player rolls each turn — 2 normally, 3 once the Third
+ * Wheel relic is owned. */
+export function effectiveDiceCount(run: RunState): number {
+  return run.relics.some((inst) => getRelicDef(inst.defId)?.addsThirdDie) ? 3 : 2;
+}
+
 export function buyOffer(run: RunState, offer: ShopOffer): RunState {
   if (run.comps < offer.price) return run;
   if (offer.type === 'relic') {
@@ -249,18 +258,29 @@ export function buyOffer(run: RunState, offer: ShopOffer): RunState {
     const instance = { instanceId: `relic-${offer.refId}-${Date.now()}`, defId: offer.refId };
     const def = getRelicDef(offer.refId);
     const bonus = def?.bonusOnAcquire ?? 0;
+    let dicePool = run.dicePool;
+    let loadout = run.loadout;
+    if (def?.addsThirdDie && loadout.length < 3) {
+      const thirdDie = { instanceId: `die-standard-third-${Date.now()}`, defId: 'standard' };
+      dicePool = [...dicePool, thirdDie];
+      loadout = [...loadout, thirdDie.instanceId];
+    }
     return {
       ...run,
       comps: run.comps - offer.price,
       bankroll: run.bankroll + bonus,
       relics: [...run.relics, instance],
+      dicePool,
+      loadout,
     };
   }
   const instance = { instanceId: `die-${offer.refId}-${Date.now()}`, defId: offer.refId };
   return { ...run, comps: run.comps - offer.price, dicePool: [...run.dicePool, instance] };
 }
 
-export function setLoadout(run: RunState, instanceIds: [string, string]): RunState {
+export function setLoadout(run: RunState, instanceIds: string[]): RunState {
+  const count = effectiveDiceCount(run);
+  if (instanceIds.length !== count) return run;
   const valid = instanceIds.every((id) => run.dicePool.some((d) => d.instanceId === id));
   if (!valid) return run;
   return { ...run, loadout: instanceIds };

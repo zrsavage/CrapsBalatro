@@ -149,6 +149,14 @@ export const RELIC_CATALOG: RelicDef[] = [
     price: 10,
     bonusOnWin: (kind) => (kind === 'horn2' || kind === 'horn3' || kind === 'horn11' || kind === 'horn12' ? 4 : 0),
   },
+  {
+    id: 'third_wheel',
+    name: 'Third Wheel',
+    description: 'Adds a third die to every roll for the rest of the run. Your total is the best two of the three.',
+    rarity: 'rare',
+    price: 22,
+    addsThirdDie: true,
+  },
 ];
 
 const RELIC_BY_ID = new Map(RELIC_CATALOG.map((r) => [r.id, r]));

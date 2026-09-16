@@ -66,7 +66,12 @@ export interface ShooterState {
 }
 
 export interface RollResult {
-  dice: [number, number];
+  /** Every physical die rolled this turn (2, or 3 with the Third Wheel relic). */
+  dice: number[];
+  /** The two dice that actually count toward the total — both dice
+   * normally, or the best two of three (lowest dropped) with a third die
+   * in play. Hard-way bets check this pair, not the raw `dice` array. */
+  countedDice: [number, number];
   total: number;
 }
 
@@ -107,6 +112,9 @@ export interface RelicDef {
   bonusRolls?: number;
   /** One-time bankroll bonus granted the moment this relic is acquired. */
   bonusOnAcquire?: number;
+  /** Adds a third die to every roll; the total becomes the best two of the
+   * three (lowest dropped). Owning more than one has no additional effect. */
+  addsThirdDie?: boolean;
   /** Called once when a new round begins. */
   onRoundStart?: (ctx: RelicHookContext) => void;
 }
@@ -124,14 +132,25 @@ export interface RoundDef {
   kind: RoundKind;
   target: number;
   rollLimit: number;
-  bossEffect?: BossEffectId;
+  modifier?: RoundModifierId;
 }
 
-export type BossEffectId =
+/** A randomly-assigned rule change for a single round, always present on
+ * boss rounds and increasingly likely on regular rounds as the ante
+ * climbs. Restrictive modifiers force players to adapt their strategy
+ * (and stop any one dice/bet combo from steamrolling every round). */
+export type RoundModifierId =
   | 'coldTable' // all payouts -25%
-  | 'noSevens' // anySeven bet disabled
+  | 'hotDice' // all payouts +25%
+  | 'noSevens' // Any Seven bet disabled
   | 'shortRolls' // rollLimit -3
-  | 'fieldFreeze'; // field bet disabled
+  | 'fieldFreeze' // Field bet disabled
+  | 'lineOnly' // only Pass/Don't Pass/Come/Don't Come pay
+  | 'numbersOnly' // only Place bets pay
+  | 'insideNumbers' // only Place 5/6/8/9 pay
+  | 'outsideNumbers' // only Place 4/10 and Field pay
+  | 'propsOnly' // only Horn/Hard Ways/Any Craps/Any Seven pay
+  | 'highStakes'; // minimum bet doubled
 
 export type GamePhase = 'run' | 'rolling' | 'shop' | 'gameOver' | 'victory';
 
@@ -148,7 +167,7 @@ export interface RunState {
   shooter: ShooterState;
   activeBets: ActiveBet[];
   dicePool: DiceInstance[];
-  loadout: [string, string]; // instanceIds of equipped dice
+  loadout: string[]; // instanceIds of equipped dice — 2 normally, 3 with the Third Wheel relic
   relics: RelicInstance[];
   relicSlots: number;
   phase: GamePhase;

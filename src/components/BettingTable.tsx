@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { BetKind, RunState } from '../game/types';
 import { BASE_ODDS, BET_LABELS, isBetAllowedNow } from '../game/bets';
 import { chipDenominations } from '../game/run';
+import { minBetFor } from '../game/engine';
 import { useGameStore } from '../state/store';
 
 function oddsLabel(kind: BetKind): string {
@@ -35,6 +36,7 @@ export function BettingTable({
   }, [run.ante]);
   const isRolling = useGameStore((s) => s.isRolling);
   const disabled = run.phase !== 'run' || run.rollsRemaining <= 0 || isRolling;
+  const minBet = minBetFor(run);
 
   const totalsByKind = new Map<BetKind, number>();
   for (const bet of run.activeBets) {
@@ -55,7 +57,10 @@ export function BettingTable({
             ${amt}
           </button>
         ))}
-        <span className="chip-hint">Tap a spot to bet ${chip}. Bankroll: ${run.bankroll}</span>
+        <span className="chip-hint">
+          Tap a spot to bet ${chip}. Bankroll: ${run.bankroll}
+          {minBet > 5 && ` · Min bet this round: $${minBet}`}
+        </span>
       </div>
 
       {SIMPLE_ROWS.map((row) => (
@@ -68,7 +73,7 @@ export function BettingTable({
                 label={BET_LABELS[kind]}
                 odds={oddsLabel(kind)}
                 amount={totalsByKind.get(kind) ?? 0}
-                allowed={!disabled && isBetAllowedNow(kind, run.shooter) && chip <= run.bankroll}
+                allowed={!disabled && isBetAllowedNow(kind, run.shooter, run.currentRound.modifier) && chip <= run.bankroll && chip >= minBet}
                 clearAllowed={!isRolling}
                 onAdd={() => onPlace(kind, chip)}
                 onClear={() => onClearKind(kind)}
@@ -83,14 +88,14 @@ export function BettingTable({
         <div className="bet-spots">
           <button
             className="bet-spot bet-spot-action"
-            disabled={disabled || !isBetAllowedNow('come', run.shooter) || chip > run.bankroll}
+            disabled={disabled || !isBetAllowedNow('come', run.shooter, run.currentRound.modifier) || chip > run.bankroll || chip < minBet}
             onClick={() => onPlace('come', chip)}
           >
             + Come
           </button>
           <button
             className="bet-spot bet-spot-action"
-            disabled={disabled || !isBetAllowedNow('dontCome', run.shooter) || chip > run.bankroll}
+            disabled={disabled || !isBetAllowedNow('dontCome', run.shooter, run.currentRound.modifier) || chip > run.bankroll || chip < minBet}
             onClick={() => onPlace('dontCome', chip)}
           >
             + Don't Come

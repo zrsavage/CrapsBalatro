@@ -16,7 +16,7 @@ export function Shop({
   shop: ShopState;
   onBuy: (offer: ShopOffer) => void;
   onReroll: () => void;
-  onSetLoadout: (ids: [string, string]) => void;
+  onSetLoadout: (ids: string[]) => void;
   onContinue: () => void;
 }) {
   return (

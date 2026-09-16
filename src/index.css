@@ -425,6 +425,13 @@ h3 {
   text-align: center;
 }
 
+.dice-hint {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
 .roll-btn {
   display: block;
   width: 100%;

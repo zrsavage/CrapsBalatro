@@ -1,5 +1,6 @@
 import type { RunState } from '../game/types';
 import { getDieDef } from '../data/dice';
+import { effectiveDiceCount } from '../game/engine';
 import { DieFaces } from './DieFaces';
 
 export function DiceBag({
@@ -7,17 +8,19 @@ export function DiceBag({
   onSetLoadout,
 }: {
   run: RunState;
-  onSetLoadout: (ids: [string, string]) => void;
+  onSetLoadout: (ids: string[]) => void;
 }) {
+  const slots = effectiveDiceCount(run);
+
   const toggle = (instanceId: string) => {
-    const [a, b] = run.loadout;
-    if (instanceId === a || instanceId === b) return; // already equipped, ignore
-    onSetLoadout([b, instanceId]); // swap out the older slot
+    if (run.loadout.includes(instanceId)) return; // already equipped, ignore
+    // drop the oldest-equipped die, add the newly picked one
+    onSetLoadout([...run.loadout.slice(1), instanceId]);
   };
 
   return (
     <div className="panel dice-bag">
-      <span className="dice-bag-title">Dice Bag (equip 2)</span>
+      <span className="dice-bag-title">Dice Bag (equip {slots})</span>
       <div className="dice-bag-list">
         {run.dicePool.map((inst) => {
           const def = getDieDef(inst.defId);

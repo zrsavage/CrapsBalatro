@@ -2,12 +2,13 @@ import type {
   ActiveBet,
   BetKind,
   BetResolution,
-  BossEffectId,
-  RelicInstance,
   RollResult,
+  RoundModifierId,
   ShooterState,
+  RelicInstance,
 } from './types';
 import { getRelicDef } from '../data/relics';
+import { getModifierDef, isKindAllowedByModifier } from '../data/modifiers';
 
 /** Base payout odds as [profit numerator, wager denominator]. A $den bet
  * that wins profits $num (stake is also returned). */
@@ -27,12 +28,12 @@ export const BASE_ODDS: Record<BetKind, [number, number]> = {
   hard10: [7, 1],
   hard6: [9, 1],
   hard8: [9, 1],
-  anyCraps: [7, 1],
+  anyCraps: [5, 1],
   anySeven: [4, 1],
-  horn2: [30, 1],
-  horn12: [30, 1],
-  horn3: [15, 1],
-  horn11: [15, 1],
+  horn2: [12, 1],
+  horn12: [12, 1],
+  horn3: [12, 1],
+  horn11: [12, 1],
 };
 
 export const BET_LABELS: Record<BetKind, string> = {
@@ -85,8 +86,9 @@ const HARD_NUMBER: Partial<Record<BetKind, number>> = {
 function computePayout(
   kind: BetKind,
   amount: number,
-  roll: RollResult,
+  roll: { total: number },
   relics: RelicInstance[],
+  modifier: RoundModifierId | undefined,
 ): number {
   let [num, den] = BASE_ODDS[kind];
   if (kind === 'field') {
@@ -103,6 +105,10 @@ function computePayout(
       profit += def.bonusOnWin(kind);
     }
   }
+  const modDef = getModifierDef(modifier);
+  if (modDef?.payoutMultiplier) {
+    profit *= modDef.payoutMultiplier;
+  }
   return Math.round(profit);
 }
 
@@ -114,14 +120,14 @@ export function resolveRoll(
   roll: RollResult,
   shooterBefore: ShooterState,
   relics: RelicInstance[],
-  bossEffect: BossEffectId | undefined,
+  modifier: RoundModifierId | undefined,
 ): { resolutions: BetResolution[]; shooterAfter: ShooterState } {
   const { total } = roll;
-  const isHardRoll = roll.dice[0] === roll.dice[1];
+  const isHardRoll = roll.countedDice[0] === roll.countedDice[1];
   let shooter: ShooterState = { ...shooterBefore };
   const resolutions: BetResolution[] = [];
 
-  const lineResolution = resolveLineBets(bets, total, shooterBefore, relics);
+  const lineResolution = resolveLineBets(bets, total, shooterBefore, relics, modifier);
   resolutions.push(...lineResolution.resolutions);
   shooter = lineResolution.shooterAfter;
 
@@ -129,17 +135,9 @@ export function resolveRoll(
     if (bet.kind === 'pass' || bet.kind === 'dontPass' || bet.kind === 'come' || bet.kind === 'dontCome') {
       continue; // handled above
     }
-    const res = resolveProp(bet, total, isHardRoll, shooterBefore, bossEffect, relics);
+    if (!isKindAllowedByModifier(bet.kind, modifier)) continue;
+    const res = resolveProp(bet, total, isHardRoll, shooterBefore, relics, modifier);
     if (res) resolutions.push(res);
-  }
-
-  if (bossEffect === 'coldTable') {
-    for (const res of resolutions) {
-      if (res.result === 'win') {
-        const profit = res.payout - res.amount;
-        res.payout = res.amount + Math.round(profit * 0.75);
-      }
-    }
   }
 
   return { resolutions, shooterAfter: shooter };
@@ -150,6 +148,7 @@ function resolveLineBets(
   total: number,
   shooter: ShooterState,
   relics: RelicInstance[],
+  modifier: RoundModifierId | undefined,
 ): { resolutions: BetResolution[]; shooterAfter: ShooterState } {
   const resolutions: BetResolution[] = [];
   let phase = shooter.phase;
@@ -158,10 +157,11 @@ function resolveLineBets(
   const pointMade = phase === 'point' && point !== null && total === point;
 
   for (const bet of bets) {
+    if (!isKindAllowedByModifier(bet.kind, modifier)) continue;
     if (bet.kind === 'pass' || bet.kind === 'dontPass') {
-      resolutions.push(...resolveMainLine(bet, total, shooter, relics));
+      resolutions.push(...resolveMainLine(bet, total, shooter, relics, modifier));
     } else if (bet.kind === 'come' || bet.kind === 'dontCome') {
-      resolutions.push(...resolveComeLine(bet, total, shooter, relics));
+      resolutions.push(...resolveComeLine(bet, total, shooter, relics, modifier));
     }
   }
 
@@ -183,14 +183,15 @@ function resolveMainLine(
   total: number,
   shooter: ShooterState,
   relics: RelicInstance[],
+  modifier: RoundModifierId | undefined,
 ): BetResolution[] {
   const isPass = bet.kind === 'pass';
   if (shooter.phase === 'comeOut') {
     if (total === 7 || total === 11) {
-      return [isPass ? win(bet, total, relics) : lose(bet)];
+      return [isPass ? win(bet, total, relics, modifier) : lose(bet)];
     }
     if (total === 2 || total === 3) {
-      return [isPass ? lose(bet) : win(bet, total, relics)];
+      return [isPass ? lose(bet) : win(bet, total, relics, modifier)];
     }
     if (total === 12) {
       return isPass ? [lose(bet)] : [push(bet)];
@@ -199,10 +200,10 @@ function resolveMainLine(
   }
   // point phase
   if (shooter.point !== null && total === shooter.point) {
-    return [isPass ? win(bet, total, relics) : lose(bet)];
+    return [isPass ? win(bet, total, relics, modifier) : lose(bet)];
   }
   if (total === 7) {
-    return [isPass ? lose(bet) : win(bet, total, relics)];
+    return [isPass ? lose(bet) : win(bet, total, relics, modifier)];
   }
   return [];
 }
@@ -212,12 +213,13 @@ function resolveComeLine(
   total: number,
   _shooter: ShooterState,
   relics: RelicInstance[],
+  modifier: RoundModifierId | undefined,
 ): BetResolution[] {
   const isCome = bet.kind === 'come';
   if (bet.point === undefined) {
     // acts like its own come-out roll
-    if (total === 7 || total === 11) return [isCome ? win(bet, total, relics) : lose(bet)];
-    if (total === 2 || total === 3) return [isCome ? lose(bet) : win(bet, total, relics)];
+    if (total === 7 || total === 11) return [isCome ? win(bet, total, relics, modifier) : lose(bet)];
+    if (total === 2 || total === 3) return [isCome ? lose(bet) : win(bet, total, relics, modifier)];
     if (total === 12) return isCome ? [lose(bet)] : [push(bet)];
     return [
       {
@@ -232,10 +234,10 @@ function resolveComeLine(
   }
   // established point for this come bet
   if (total === bet.point) {
-    return [isCome ? win(bet, total, relics) : lose(bet)];
+    return [isCome ? win(bet, total, relics, modifier) : lose(bet)];
   }
   if (total === 7) {
-    return [isCome ? lose(bet) : win(bet, total, relics)];
+    return [isCome ? lose(bet) : win(bet, total, relics, modifier)];
   }
   return [];
 }
@@ -245,19 +247,18 @@ function resolveProp(
   total: number,
   isHardRoll: boolean,
   shooter: ShooterState,
-  bossEffect: BossEffectId | undefined,
   relics: RelicInstance[],
+  modifier: RoundModifierId | undefined,
 ): BetResolution | null {
   if (bet.kind === 'field') {
-    if (bossEffect === 'fieldFreeze') return null;
-    const roll: RollResult = { dice: [0, 0], total };
+    const roll = { total };
     if ([2, 3, 4, 9, 10, 11, 12].includes(total)) {
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
@@ -270,13 +271,13 @@ function resolveProp(
       return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
     }
     if (total === placeNum) {
-      const roll: RollResult = { dice: [0, 0], total };
+      const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
       };
     }
     return null;
@@ -288,14 +289,14 @@ function resolveProp(
       return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
     }
     if (total === hardNum) {
-      const roll: RollResult = { dice: [0, 0], total };
+      const roll = { total };
       if (isHardRoll) {
         return {
           betId: bet.id,
           kind: bet.kind,
           amount: bet.amount,
           result: 'win',
-          payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+          payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
         };
       }
       return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
@@ -305,13 +306,13 @@ function resolveProp(
 
   if (bet.kind === 'anyCraps') {
     if ([2, 3, 12].includes(total)) {
-      const roll: RollResult = { dice: [0, 0], total };
+      const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
@@ -320,28 +321,27 @@ function resolveProp(
   const hornNum = HORN_NUMBER[bet.kind];
   if (hornNum !== undefined) {
     if (total === hornNum) {
-      const roll: RollResult = { dice: [0, 0], total };
+      const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
   }
 
   if (bet.kind === 'anySeven') {
-    if (bossEffect === 'noSevens') return null;
     if (total === 7) {
-      const roll: RollResult = { dice: [0, 0], total };
+      const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
@@ -350,14 +350,14 @@ function resolveProp(
   return null;
 }
 
-function win(bet: ActiveBet, total: number, relics: RelicInstance[]): BetResolution {
-  const roll: RollResult = { dice: [0, 0], total };
+function win(bet: ActiveBet, total: number, relics: RelicInstance[], modifier: RoundModifierId | undefined): BetResolution {
+  const roll = { total };
   return {
     betId: bet.id,
     kind: bet.kind,
     amount: bet.amount,
     result: 'win',
-    payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics),
+    payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
   };
 }
 
@@ -369,8 +369,9 @@ function push(bet: ActiveBet): BetResolution {
   return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'push', payout: bet.amount };
 }
 
-/** Bet kinds allowed to be placed given the current shooter phase. */
-export function isBetAllowedNow(kind: BetKind, shooter: ShooterState): boolean {
+/** Bet kinds allowed to be placed given the current shooter phase and round modifier. */
+export function isBetAllowedNow(kind: BetKind, shooter: ShooterState, modifier: RoundModifierId | undefined): boolean {
+  if (!isKindAllowedByModifier(kind, modifier)) return false;
   if (kind === 'pass' || kind === 'dontPass') return shooter.phase === 'comeOut';
   if (kind === 'come' || kind === 'dontCome') return shooter.phase === 'point';
   return true;
