@@ -9,12 +9,13 @@ import { RelicBar } from './components/RelicBar';
 import { DiceBag } from './components/DiceBag';
 import { Shop } from './components/Shop';
 import { EndScreen } from './components/EndScreen';
-import { CosmeticsPanel } from './components/CosmeticsPanel';
+import { MainMenu } from './components/MainMenu';
 
 function App() {
   const run = useGameStore((s) => s.run);
   const shop = useGameStore((s) => s.shop);
   const runAchievements = useGameStore((s) => s.runAchievements);
+  const screen = useGameStore((s) => s.screen);
   const placeBet = useGameStore((s) => s.placeBet);
   const removeBetsOfKind = useGameStore((s) => s.removeBetsOfKind);
   const roll = useGameStore((s) => s.roll);
@@ -24,6 +25,8 @@ function App() {
   const setLoadout = useGameStore((s) => s.setLoadout);
   const continueToNextRound = useGameStore((s) => s.continueToNextRound);
   const restartRun = useGameStore((s) => s.restartRun);
+  const enterGame = useGameStore((s) => s.enterGame);
+  const goToMenu = useGameStore((s) => s.goToMenu);
 
   const selectedSkin = useCosmeticsStore((s) => s.selectedSkin);
   const selectedDice = useCosmeticsStore((s) => s.selectedDice);
@@ -36,16 +39,31 @@ function App() {
     document.documentElement.setAttribute('data-dice', selectedDice);
   }, [selectedDice]);
 
+  if (screen === 'menu') {
+    return (
+      <div className="app">
+        <MainMenu run={run} onPlay={enterGame} onNewRun={() => { restartRun(); enterGame(); }} />
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <div className="title-bar">
         <h1>🎲 Crapslatro</h1>
         <div className="subtitle">Beat the House, 1 roll at a time.</div>
-        <CosmeticsPanel />
+        <button className="menu-toggle" onClick={goToMenu}>
+          ☰ Menu
+        </button>
       </div>
 
       {(run.phase === 'gameOver' || run.phase === 'victory') && run.lastRunSummary && (
-        <EndScreen summary={run.lastRunSummary} runAchievements={runAchievements} onRestart={restartRun} />
+        <EndScreen
+          summary={run.lastRunSummary}
+          runAchievements={runAchievements}
+          onRestart={restartRun}
+          onMainMenu={goToMenu}
+        />
       )}
 
       {run.phase === 'shop' && shop && (

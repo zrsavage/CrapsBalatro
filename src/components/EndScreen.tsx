@@ -5,10 +5,12 @@ export function EndScreen({
   summary,
   runAchievements,
   onRestart,
+  onMainMenu,
 }: {
   summary: RunSummary;
   runAchievements: string[];
   onRestart: () => void;
+  onMainMenu: () => void;
 }) {
   return (
     <div className="panel end-screen">
@@ -44,6 +46,9 @@ export function EndScreen({
 
       <button className="roll-btn" onClick={onRestart}>
         Start New Run
+      </button>
+      <button className="secondary-btn end-screen-menu-btn" onClick={onMainMenu}>
+        Main Menu
       </button>
     </div>
   );

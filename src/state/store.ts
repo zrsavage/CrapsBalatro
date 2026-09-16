@@ -19,6 +19,8 @@ import { useCosmeticsStore } from './cosmeticsStore';
 
 const ROLL_ANIMATION_MS = 950;
 
+export type Screen = 'menu' | 'game';
+
 interface GameStore {
   run: RunState;
   rng: () => number;
@@ -26,6 +28,7 @@ interface GameStore {
   isRolling: boolean;
   pendingRoll: RollResult | null; // the roll dice are animating toward
   runAchievements: string[]; // achievements earned during the current run, revealed on the EndScreen
+  screen: Screen; // top-level UI screen — the main menu, or the active game
   placeBet: (kind: BetKind, amount: number) => void;
   removeBet: (betId: string) => void;
   removeBetsOfKind: (kind: BetKind) => void;
@@ -37,6 +40,8 @@ interface GameStore {
   setLoadout: (ids: string[]) => void;
   continueToNextRound: () => void;
   restartRun: () => void;
+  enterGame: () => void;
+  goToMenu: () => void;
 }
 
 function freshRun(): { run: RunState; rng: () => number } {
@@ -69,6 +74,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     isRolling: false,
     pendingRoll: null,
     runAchievements: [],
+    screen: 'menu',
 
     placeBet: (kind, amount) => set((s) => ({ run: placeBet(s.run, kind, amount) })),
 
@@ -145,5 +151,8 @@ export const useGameStore = create<GameStore>((set, get) => {
       const fresh = freshRun();
       set({ run: fresh.run, rng: fresh.rng, shop: null, isRolling: false, pendingRoll: null, runAchievements: [] });
     },
+
+    enterGame: () => set({ screen: 'game' }),
+    goToMenu: () => set({ screen: 'menu' }),
   };
 });
