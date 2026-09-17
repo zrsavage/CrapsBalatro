@@ -68,10 +68,8 @@ export interface ShooterState {
 export interface RollResult {
   /** Every physical die rolled this turn (2 through Ante 2, 3 from Ante 3, 4 from Ante 6). */
   dice: number[];
-  /** The two dice that actually count toward the total — both dice
-   * normally, or the best two of N (lowest dropped) once the board grows
-   * past two dice. Hard-way bets check this pair, not the raw `dice` array. */
-  countedDice: [number, number];
+  /** The true sum of every physical die — 2-12 with 2 dice, 3-18 with 3,
+   * 4-24 with 4. A hard-way bet wins when all of `dice` are equal. */
   total: number;
 }
 

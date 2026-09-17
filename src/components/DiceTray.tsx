@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useGameStore } from '../state/store';
 import type { RunState } from '../game/types';
 import { Die } from './Die';
-import { BET_LABELS } from '../game/bets';
+import { getBetLabel } from '../game/bets';
+import { getTierTable } from '../game/diceTiers';
 
 const SPIN_TICK_MS = 90;
 
@@ -46,7 +47,11 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
         ))}
         <div className="dice-total">{shownTotal ?? '–'}</div>
       </div>
-      {diceCount > 2 && <div className="dice-hint">Best two of {diceCount} count toward your total.</div>}
+      {diceCount > 2 && (
+        <div className="dice-hint">
+          All {diceCount} dice count toward your total ({getTierTable(diceCount).min}-{getTierTable(diceCount).max}).
+        </div>
+      )}
       <button className="roll-btn" onClick={onRoll} disabled={!canRoll}>
         {isRolling ? 'Rolling…' : run.rollsRemaining > 0 ? `Roll (${run.rollsRemaining} left)` : 'No Rolls Left'}
       </button>
@@ -55,7 +60,7 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
           {last.resolutions.length === 0 && <li className="feed-neutral">No bets resolved.</li>}
           {last.resolutions.map((r, i) => (
             <li key={i} className={`feed-${r.result}`}>
-              {BET_LABELS[r.kind]}{' '}
+              {getBetLabel(r.kind, last.roll.dice.length)}{' '}
               {r.result === 'win'
                 ? `won $${r.payout - r.amount}`
                 : r.result === 'lose'

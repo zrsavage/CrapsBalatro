@@ -9,79 +9,31 @@ import type {
 } from './types';
 import { getRelicDef } from '../data/relics';
 import { getModifierDef, isKindAllowedByModifier } from '../data/modifiers';
+import { getTierOdds, getTierTable, numberForKind, type DiceTierTable } from './diceTiers';
 
-/** Base payout odds as [profit numerator, wager denominator]. A $den bet
- * that wins profits $num (stake is also returned). */
-export const BASE_ODDS: Record<BetKind, [number, number]> = {
-  pass: [1, 1],
-  dontPass: [1, 1],
-  come: [1, 1],
-  dontCome: [1, 1],
-  field: [1, 1], // special-cased: 2x on 2, 3x on 12
-  place4: [9, 5],
-  place10: [9, 5],
-  place5: [7, 5],
-  place9: [7, 5],
-  place6: [7, 6],
-  place8: [7, 6],
-  hard4: [7, 1],
-  hard10: [7, 1],
-  hard6: [9, 1],
-  hard8: [9, 1],
-  anyCraps: [5, 1],
-  anySeven: [4, 1],
-  horn2: [12, 1],
-  horn12: [12, 1],
-  horn3: [12, 1],
-  horn11: [12, 1],
-};
-
-export const BET_LABELS: Record<BetKind, string> = {
+const STATIC_LABELS: Partial<Record<BetKind, string>> = {
   pass: 'Pass Line',
   dontPass: "Don't Pass",
   come: 'Come',
   dontCome: "Don't Come",
   field: 'Field',
-  place4: 'Place 4',
-  place5: 'Place 5',
-  place6: 'Place 6',
-  place8: 'Place 8',
-  place9: 'Place 9',
-  place10: 'Place 10',
-  hard4: 'Hard 4',
-  hard6: 'Hard 6',
-  hard8: 'Hard 8',
-  hard10: 'Hard 10',
   anyCraps: 'Any Craps',
   anySeven: 'Any Seven',
-  horn2: 'Horn 2',
-  horn3: 'Horn 3',
-  horn11: 'Horn 11',
-  horn12: 'Horn 12',
 };
 
-const HORN_NUMBER: Partial<Record<BetKind, number>> = {
-  horn2: 2,
-  horn3: 3,
-  horn11: 11,
-  horn12: 12,
-};
-
-const PLACE_NUMBER: Partial<Record<BetKind, number>> = {
-  place4: 4,
-  place5: 5,
-  place6: 6,
-  place8: 8,
-  place9: 9,
-  place10: 10,
-};
-
-const HARD_NUMBER: Partial<Record<BetKind, number>> = {
-  hard4: 4,
-  hard6: 6,
-  hard8: 8,
-  hard10: 10,
-};
+/** Bet-spot label for the given dice count — place/hard/horn kinds embed a
+ * number that shifts per tier (e.g. "Place 6" at 2 dice might be "Place 9"
+ * at 3 dice), so these can't be static strings once the board isn't
+ * pinned to 2-12 anymore. */
+export function getBetLabel(kind: BetKind, diceCount: number): string {
+  const staticLabel = STATIC_LABELS[kind];
+  if (staticLabel) return staticLabel;
+  const table = getTierTable(diceCount);
+  const num = numberForKind(table, kind);
+  if (kind.startsWith('hard')) return `Hard ${num}`;
+  if (kind.startsWith('horn')) return `Horn ${num}`;
+  return `Place ${num}`;
+}
 
 function computePayout(
   kind: BetKind,
@@ -89,11 +41,13 @@ function computePayout(
   roll: { total: number },
   relics: RelicInstance[],
   modifier: RoundModifierId | undefined,
+  table: DiceTierTable,
 ): number {
-  let [num, den] = BASE_ODDS[kind];
+  const odds = getTierOdds(table.diceCount);
+  let [num, den] = odds[kind];
   if (kind === 'field') {
-    if (roll.total === 2) [num, den] = [2, 1];
-    else if (roll.total === 12) [num, den] = [3, 1];
+    if (roll.total === table.min) [num, den] = [2, 1];
+    else if (roll.total === table.max) [num, den] = [3, 1];
   }
   let profit = (amount * num) / den;
   for (const inst of relics) {
@@ -123,11 +77,12 @@ export function resolveRoll(
   modifier: RoundModifierId | undefined,
 ): { resolutions: BetResolution[]; shooterAfter: ShooterState } {
   const { total } = roll;
-  const isHardRoll = roll.countedDice[0] === roll.countedDice[1];
+  const table = getTierTable(roll.dice.length);
+  const isHardRoll = roll.dice.every((d) => d === roll.dice[0]);
   let shooter: ShooterState = { ...shooterBefore };
   const resolutions: BetResolution[] = [];
 
-  const lineResolution = resolveLineBets(bets, total, shooterBefore, relics, modifier);
+  const lineResolution = resolveLineBets(bets, total, shooterBefore, relics, modifier, table);
   resolutions.push(...lineResolution.resolutions);
   shooter = lineResolution.shooterAfter;
 
@@ -136,7 +91,7 @@ export function resolveRoll(
       continue; // handled above
     }
     if (!isKindAllowedByModifier(bet.kind, modifier)) continue;
-    const res = resolveProp(bet, total, isHardRoll, shooterBefore, relics, modifier);
+    const res = resolveProp(bet, total, isHardRoll, shooterBefore, relics, modifier, table);
     if (res) resolutions.push(res);
   }
 
@@ -149,24 +104,26 @@ function resolveLineBets(
   shooter: ShooterState,
   relics: RelicInstance[],
   modifier: RoundModifierId | undefined,
+  table: DiceTierTable,
 ): { resolutions: BetResolution[]; shooterAfter: ShooterState } {
   const resolutions: BetResolution[] = [];
   let phase = shooter.phase;
   let point = shooter.point;
-  const sevenedOut = phase === 'point' && total === 7;
+  const sevenedOut = phase === 'point' && total === table.natural1;
   const pointMade = phase === 'point' && point !== null && total === point;
 
   for (const bet of bets) {
     if (!isKindAllowedByModifier(bet.kind, modifier)) continue;
     if (bet.kind === 'pass' || bet.kind === 'dontPass') {
-      resolutions.push(...resolveMainLine(bet, total, shooter, relics, modifier));
+      resolutions.push(...resolveMainLine(bet, total, shooter, relics, modifier, table));
     } else if (bet.kind === 'come' || bet.kind === 'dontCome') {
-      resolutions.push(...resolveComeLine(bet, total, shooter, relics, modifier));
+      resolutions.push(...resolveComeLine(bet, total, shooter, relics, modifier, table));
     }
   }
 
+  const decidingNumbers = [...table.craps, table.natural1, table.natural2];
   if (phase === 'comeOut') {
-    if (![2, 3, 7, 11, 12].includes(total)) {
+    if (!decidingNumbers.includes(total)) {
       phase = 'point';
       point = total;
     }
@@ -184,26 +141,28 @@ function resolveMainLine(
   shooter: ShooterState,
   relics: RelicInstance[],
   modifier: RoundModifierId | undefined,
+  table: DiceTierTable,
 ): BetResolution[] {
   const isPass = bet.kind === 'pass';
+  const barred = table.craps[2]; // the top extreme pushes Don't Pass instead of winning it
   if (shooter.phase === 'comeOut') {
-    if (total === 7 || total === 11) {
-      return [isPass ? win(bet, total, relics, modifier) : lose(bet)];
+    if (total === table.natural1 || total === table.natural2) {
+      return [isPass ? win(bet, total, relics, modifier, table) : lose(bet)];
     }
-    if (total === 2 || total === 3) {
-      return [isPass ? lose(bet) : win(bet, total, relics, modifier)];
+    if (total === table.craps[0] || total === table.craps[1]) {
+      return [isPass ? lose(bet) : win(bet, total, relics, modifier, table)];
     }
-    if (total === 12) {
+    if (total === barred) {
       return isPass ? [lose(bet)] : [push(bet)];
     }
     return [];
   }
   // point phase
   if (shooter.point !== null && total === shooter.point) {
-    return [isPass ? win(bet, total, relics, modifier) : lose(bet)];
+    return [isPass ? win(bet, total, relics, modifier, table) : lose(bet)];
   }
-  if (total === 7) {
-    return [isPass ? lose(bet) : win(bet, total, relics, modifier)];
+  if (total === table.natural1) {
+    return [isPass ? lose(bet) : win(bet, total, relics, modifier, table)];
   }
   return [];
 }
@@ -214,13 +173,19 @@ function resolveComeLine(
   _shooter: ShooterState,
   relics: RelicInstance[],
   modifier: RoundModifierId | undefined,
+  table: DiceTierTable,
 ): BetResolution[] {
   const isCome = bet.kind === 'come';
+  const barred = table.craps[2];
   if (bet.point === undefined) {
     // acts like its own come-out roll
-    if (total === 7 || total === 11) return [isCome ? win(bet, total, relics, modifier) : lose(bet)];
-    if (total === 2 || total === 3) return [isCome ? lose(bet) : win(bet, total, relics, modifier)];
-    if (total === 12) return isCome ? [lose(bet)] : [push(bet)];
+    if (total === table.natural1 || total === table.natural2) {
+      return [isCome ? win(bet, total, relics, modifier, table) : lose(bet)];
+    }
+    if (total === table.craps[0] || total === table.craps[1]) {
+      return [isCome ? lose(bet) : win(bet, total, relics, modifier, table)];
+    }
+    if (total === barred) return isCome ? [lose(bet)] : [push(bet)];
     return [
       {
         betId: bet.id,
@@ -234,10 +199,10 @@ function resolveComeLine(
   }
   // established point for this come bet
   if (total === bet.point) {
-    return [isCome ? win(bet, total, relics, modifier) : lose(bet)];
+    return [isCome ? win(bet, total, relics, modifier, table) : lose(bet)];
   }
-  if (total === 7) {
-    return [isCome ? lose(bet) : win(bet, total, relics, modifier)];
+  if (total === table.natural1) {
+    return [isCome ? lose(bet) : win(bet, total, relics, modifier, table)];
   }
   return [];
 }
@@ -249,25 +214,27 @@ function resolveProp(
   shooter: ShooterState,
   relics: RelicInstance[],
   modifier: RoundModifierId | undefined,
+  table: DiceTierTable,
 ): BetResolution | null {
   if (bet.kind === 'field') {
     const roll = { total };
-    if ([2, 3, 4, 9, 10, 11, 12].includes(total)) {
+    if (table.field.has(total)) {
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
   }
 
-  const placeNum = PLACE_NUMBER[bet.kind];
-  if (placeNum !== undefined) {
+  const placeNum = numberForKind(table, bet.kind);
+
+  if (bet.kind.startsWith('place')) {
     if (shooter.phase !== 'point') return null; // place bets only work with a point established
-    if (total === 7) {
+    if (total === table.natural1) {
       return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
     }
     if (total === placeNum) {
@@ -277,18 +244,17 @@ function resolveProp(
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
       };
     }
     return null;
   }
 
-  const hardNum = HARD_NUMBER[bet.kind];
-  if (hardNum !== undefined) {
-    if (total === 7) {
+  if (bet.kind.startsWith('hard')) {
+    if (total === table.natural1) {
       return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
     }
-    if (total === hardNum) {
+    if (total === placeNum) {
       const roll = { total };
       if (isHardRoll) {
         return {
@@ -296,7 +262,7 @@ function resolveProp(
           kind: bet.kind,
           amount: bet.amount,
           result: 'win',
-          payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+          payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
         };
       }
       return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
@@ -305,43 +271,42 @@ function resolveProp(
   }
 
   if (bet.kind === 'anyCraps') {
-    if ([2, 3, 12].includes(total)) {
+    if (table.craps.includes(total)) {
       const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
   }
 
-  const hornNum = HORN_NUMBER[bet.kind];
-  if (hornNum !== undefined) {
-    if (total === hornNum) {
+  if (bet.kind.startsWith('horn')) {
+    if (total === placeNum) {
       const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
   }
 
   if (bet.kind === 'anySeven') {
-    if (total === 7) {
+    if (total === table.natural1) {
       const roll = { total };
       return {
         betId: bet.id,
         kind: bet.kind,
         amount: bet.amount,
         result: 'win',
-        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+        payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
       };
     }
     return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
@@ -350,14 +315,20 @@ function resolveProp(
   return null;
 }
 
-function win(bet: ActiveBet, total: number, relics: RelicInstance[], modifier: RoundModifierId | undefined): BetResolution {
+function win(
+  bet: ActiveBet,
+  total: number,
+  relics: RelicInstance[],
+  modifier: RoundModifierId | undefined,
+  table: DiceTierTable,
+): BetResolution {
   const roll = { total };
   return {
     betId: bet.id,
     kind: bet.kind,
     amount: bet.amount,
     result: 'win',
-    payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier),
+    payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
   };
 }
 

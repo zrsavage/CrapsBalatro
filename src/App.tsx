@@ -10,6 +10,7 @@ import { DiceBag } from './components/DiceBag';
 import { Shop } from './components/Shop';
 import { EndScreen } from './components/EndScreen';
 import { MainMenu } from './components/MainMenu';
+import { effectiveDiceCount } from './game/engine';
 
 function App() {
   const run = useGameStore((s) => s.run);
@@ -81,7 +82,7 @@ function App() {
         <>
           <Hud run={run} onCashOut={cashOutRound} />
           <DiceTray run={run} onRoll={roll} />
-          <TableView activeBets={run.activeBets} onClear={removeBetsOfKind} />
+          <TableView activeBets={run.activeBets} diceCount={effectiveDiceCount(run)} onClear={removeBetsOfKind} />
           <BettingTable run={run} onPlace={placeBet} onClearKind={removeBetsOfKind} />
           <RelicBar run={run} />
           <DiceBag run={run} onSetLoadout={setLoadout} />

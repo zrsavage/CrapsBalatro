@@ -4,7 +4,7 @@ export const RELIC_CATALOG: RelicDef[] = [
   {
     id: 'iron_cross',
     name: 'Iron Cross',
-    description: 'Place 6 and Place 8 pay an extra 15%.',
+    description: 'The two most central Place numbers pay an extra 15%.',
     rarity: 'common',
     price: 5,
     modifyPayoutMultiplier: (kind, base) => (kind === 'place6' || kind === 'place8' ? base * 1.15 : base),
@@ -12,7 +12,7 @@ export const RELIC_CATALOG: RelicDef[] = [
   {
     id: 'corner_hustler',
     name: 'Corner Hustler',
-    description: 'Place 4 and Place 10 pay an extra 20%.',
+    description: 'The two longest-odds Place numbers pay an extra 20%.',
     rarity: 'common',
     price: 5,
     modifyPayoutMultiplier: (kind, base) => (kind === 'place4' || kind === 'place10' ? base * 1.2 : base),
@@ -101,7 +101,7 @@ export const RELIC_CATALOG: RelicDef[] = [
   {
     id: 'place_specialist',
     name: 'Place Specialist',
-    description: 'Place 5 and Place 9 pay an extra 20%.',
+    description: 'The two mid-distance Place numbers pay an extra 20%.',
     rarity: 'common',
     price: 5,
     modifyPayoutMultiplier: (kind, base) => (kind === 'place5' || kind === 'place9' ? base * 1.2 : base),
@@ -128,7 +128,7 @@ export const RELIC_CATALOG: RelicDef[] = [
   {
     id: 'boxcar_horn',
     name: 'Boxcar Horn',
-    description: 'Horn 2 and Horn 12 pay an extra 20%.',
+    description: 'The two most extreme Horn numbers pay an extra 20%.',
     rarity: 'uncommon',
     price: 7,
     modifyPayoutMultiplier: (kind, base) => (kind === 'horn2' || kind === 'horn12' ? base * 1.2 : base),
@@ -136,7 +136,7 @@ export const RELIC_CATALOG: RelicDef[] = [
   {
     id: 'yo_eleven',
     name: 'Yo Eleven',
-    description: 'Horn 3 and Horn 11 pay an extra 20%.',
+    description: 'The two near-miss Horn numbers pay an extra 20%.',
     rarity: 'uncommon',
     price: 7,
     modifyPayoutMultiplier: (kind, base) => (kind === 'horn3' || kind === 'horn11' ? base * 1.2 : base),

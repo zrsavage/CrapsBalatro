@@ -1,11 +1,11 @@
 import type { ActiveBet, BetKind } from '../game/types';
+import { getTierTable, numberForKind } from '../game/diceTiers';
 
 const VB_W = 300;
 const VB_H = 272;
 
 interface Spot {
   kind: BetKind;
-  label: string;
   x: number;
   y: number;
   size?: number;
@@ -16,28 +16,48 @@ interface Spot {
 // (far end, proposition/horn bets) to bottom (the curved rail where Pass
 // Line sits, closest to the shooter).
 const SPOTS: Spot[] = [
-  { kind: 'horn2', label: '2', x: 52, y: 24 },
-  { kind: 'horn3', label: '3', x: 100, y: 24 },
-  { kind: 'horn11', label: '11', x: 200, y: 24 },
-  { kind: 'horn12', label: '12', x: 248, y: 24 },
-  { kind: 'anyCraps', label: 'ANY CRAPS', x: 95, y: 43, size: 7, chipDy: 19 },
-  { kind: 'anySeven', label: 'ANY SEVEN', x: 205, y: 43, size: 7, chipDy: 19 },
-  { kind: 'hard4', label: 'H4', x: 58, y: 78 },
-  { kind: 'hard6', label: 'H6', x: 119, y: 78 },
-  { kind: 'hard8', label: 'H8', x: 181, y: 78 },
-  { kind: 'hard10', label: 'H10', x: 242, y: 78 },
-  { kind: 'field', label: 'FIELD', x: 150, y: 112, size: 11 },
-  { kind: 'place4', label: '4', x: 40, y: 150 },
-  { kind: 'place5', label: '5', x: 84, y: 150 },
-  { kind: 'place6', label: '6', x: 128, y: 150 },
-  { kind: 'place8', label: '8', x: 172, y: 150 },
-  { kind: 'place9', label: '9', x: 216, y: 150 },
-  { kind: 'place10', label: '10', x: 260, y: 150 },
-  { kind: 'come', label: 'COME', x: 110, y: 190, size: 11, chipDy: 16 },
-  { kind: 'dontCome', label: "DON'T COME", x: 240, y: 190, size: 6.5, chipDy: 16 },
-  { kind: 'dontPass', label: "DON'T PASS BAR", x: 150, y: 232, size: 6.5, chipDy: 8 },
-  { kind: 'pass', label: 'PASS LINE', x: 150, y: 254, size: 9.5, chipDy: 10 },
+  { kind: 'horn2', x: 52, y: 24 },
+  { kind: 'horn3', x: 100, y: 24 },
+  { kind: 'horn11', x: 200, y: 24 },
+  { kind: 'horn12', x: 248, y: 24 },
+  { kind: 'anyCraps', x: 95, y: 43, size: 7, chipDy: 19 },
+  { kind: 'anySeven', x: 205, y: 43, size: 7, chipDy: 19 },
+  { kind: 'hard4', x: 58, y: 78 },
+  { kind: 'hard6', x: 119, y: 78 },
+  { kind: 'hard8', x: 181, y: 78 },
+  { kind: 'hard10', x: 242, y: 78 },
+  { kind: 'field', x: 150, y: 112, size: 11 },
+  { kind: 'place4', x: 40, y: 150 },
+  { kind: 'place5', x: 84, y: 150 },
+  { kind: 'place6', x: 128, y: 150 },
+  { kind: 'place8', x: 172, y: 150 },
+  { kind: 'place9', x: 216, y: 150 },
+  { kind: 'place10', x: 260, y: 150 },
+  { kind: 'come', x: 110, y: 190, size: 11, chipDy: 16 },
+  { kind: 'dontCome', x: 240, y: 190, size: 6.5, chipDy: 16 },
+  { kind: 'dontPass', x: 150, y: 232, size: 6.5, chipDy: 8 },
+  { kind: 'pass', x: 150, y: 254, size: 9.5, chipDy: 10 },
 ];
+
+const STATIC_SPOT_LABELS: Partial<Record<BetKind, string>> = {
+  anyCraps: 'ANY CRAPS',
+  anySeven: 'ANY SEVEN',
+  field: 'FIELD',
+  come: 'COME',
+  dontCome: "DON'T COME",
+  dontPass: "DON'T PASS BAR",
+  pass: 'PASS LINE',
+};
+
+/** The number (or "H"-prefixed number) printed on a felt spot — dynamic
+ * because place/hard/horn numbers shift with dice count once the board
+ * isn't pinned to the classic 2-12 range anymore. */
+function spotLabel(kind: BetKind, diceCount: number): string {
+  const staticLabel = STATIC_SPOT_LABELS[kind];
+  if (staticLabel) return staticLabel;
+  const num = numberForKind(getTierTable(diceCount), kind);
+  return kind.startsWith('hard') ? `H${num}` : String(num);
+}
 
 function pct(v: number, of: number): string {
   return `${(v / of) * 100}%`;
@@ -49,9 +69,11 @@ function pct(v: number, of: number): string {
  * currently has money down, tappable to pick that bet back up. */
 export function TableView({
   activeBets,
+  diceCount,
   onClear,
 }: {
   activeBets: ActiveBet[];
+  diceCount: number;
   onClear: (kind: BetKind) => void;
 }) {
   const totals = new Map<BetKind, number>();
@@ -92,7 +114,7 @@ export function TableView({
 
           {SPOTS.map((s) => (
             <text key={s.kind} x={s.x} y={s.y} textAnchor="middle" className="tv-svg-label" style={{ fontSize: s.size ?? 13 }}>
-              {s.label}
+              {spotLabel(s.kind, diceCount)}
             </text>
           ))}
         </svg>
@@ -106,7 +128,7 @@ export function TableView({
                 className="tv-chip"
                 style={{ left: pct(s.x, VB_W), top: pct(s.y + (s.chipDy ?? 14), VB_H) }}
                 onClick={() => onClear(s.kind)}
-                aria-label={`Pick up ${s.label} bet`}
+                aria-label={`Pick up ${spotLabel(s.kind, diceCount)} bet`}
               >
                 ${amount}
               </button>

@@ -89,7 +89,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'the_hard_way',
     name: 'The Hard Way',
-    description: 'Win a Hard Way bet (4, 6, 8, or 10 rolled as a pair).',
+    description: 'Win a Hard Way bet (all dice landing on the same number).',
     tier: 2,
     unlockKind: 'trophy',
     unlockLabel: 'Bragging rights',

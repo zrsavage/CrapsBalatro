@@ -26,8 +26,8 @@ export const MODIFIERS: ModifierDef[] = [
   { id: 'fieldFreeze', label: 'Field Freeze: Field bet disabled', disabledKinds: ['field'] },
   { id: 'lineOnly', label: "Line Only: only Pass/Don't Pass/Come/Don't Come pay", allowedKinds: LINE_KINDS },
   { id: 'numbersOnly', label: 'Numbers Only: only Place bets pay', allowedKinds: PLACE_KINDS },
-  { id: 'insideNumbers', label: 'Inside Numbers: only Place 5/6/8/9 pay', allowedKinds: INSIDE_KINDS },
-  { id: 'outsideNumbers', label: "Outside Numbers: only Place 4/10 and Field pay", allowedKinds: OUTSIDE_KINDS },
+  { id: 'insideNumbers', label: 'Inside Numbers: only the 4 central Place bets pay', allowedKinds: INSIDE_KINDS },
+  { id: 'outsideNumbers', label: 'Outside Numbers: only the longest-odds Place bets and Field pay', allowedKinds: OUTSIDE_KINDS },
   { id: 'propsOnly', label: 'Proposition Night: only Horn/Hard Ways/one-roll props pay', allowedKinds: PROP_KINDS },
   { id: 'highStakes', label: 'High Stakes: minimum bet doubled', minBetMultiplier: 2 },
 ];

@@ -1,8 +1,16 @@
 import type { RunState } from '../game/types';
 import { getModifierDef } from '../data/modifiers';
-import { canEndRoundEarly, earlyCashOutBonusPerRoll } from '../game/engine';
+import { canEndRoundEarly, earlyCashOutBonusPerRoll, effectiveDiceCount } from '../game/engine';
+import { getTierTable } from '../game/diceTiers';
 
 const ROUND_NAMES = ['Round 1 of 3', 'Round 2 of 3', 'Boss Round'];
+
+function comeOutHint(run: RunState): string {
+  const table = getTierTable(effectiveDiceCount(run));
+  const naturals = `${table.natural1} or ${table.natural2}`;
+  const craps = table.craps.join('/');
+  return `${naturals} wins Pass, ${craps} loses it`;
+}
 
 export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }) {
   const roundScore = run.bankroll - run.roundStartBankroll;
@@ -46,7 +54,9 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
           <span className="point-callout-text">to win Pass / lose Don't Pass</span>
         </div>
       ) : (
-        <div className="point-callout point-callout-comeout">Come-Out Roll — 7 or 11 wins Pass, 2/3/12 loses it</div>
+        <div className="point-callout point-callout-comeout">
+          Come-Out Roll — {comeOutHint(run)}
+        </div>
       )}
 
       <div className="hud-target">

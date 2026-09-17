@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import type { BetKind, RunState } from '../game/types';
-import { BASE_ODDS, BET_LABELS, isBetAllowedNow } from '../game/bets';
+import { getBetLabel, isBetAllowedNow } from '../game/bets';
+import { getTierOdds } from '../game/diceTiers';
 import { chipDenominations } from '../game/run';
-import { minBetFor } from '../game/engine';
+import { minBetFor, effectiveDiceCount } from '../game/engine';
 import { useGameStore } from '../state/store';
 
-function oddsLabel(kind: BetKind): string {
-  const [num, den] = BASE_ODDS[kind];
-  return `${num}:${den}`;
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+function oddsLabel(kind: BetKind, diceCount: number): string {
+  const [num, den] = getTierOdds(diceCount)[kind];
+  const g = gcd(num, den);
+  const rn = num / g;
+  const rd = den / g;
+  if (rd <= 10) return `${rn}:${rd}`;
+  return `${(num / den).toFixed(2)}:1`;
 }
 
 const SIMPLE_ROWS: { title: string; kinds: BetKind[] }[] = [
@@ -37,6 +46,7 @@ export function BettingTable({
   const isRolling = useGameStore((s) => s.isRolling);
   const disabled = run.phase !== 'run' || run.rollsRemaining <= 0 || isRolling;
   const minBet = minBetFor(run);
+  const diceCount = effectiveDiceCount(run);
 
   const totalsByKind = new Map<BetKind, number>();
   for (const bet of run.activeBets) {
@@ -70,8 +80,8 @@ export function BettingTable({
             {row.kinds.map((kind) => (
               <BetSpot
                 key={kind}
-                label={BET_LABELS[kind]}
-                odds={oddsLabel(kind)}
+                label={getBetLabel(kind, diceCount)}
+                odds={oddsLabel(kind, diceCount)}
                 amount={totalsByKind.get(kind) ?? 0}
                 allowed={!disabled && isBetAllowedNow(kind, run.shooter, run.currentRound.modifier) && chip <= run.bankroll && chip >= minBet}
                 clearAllowed={!isRolling}
@@ -107,7 +117,7 @@ export function BettingTable({
         <ul className="working-bets">
           {comeBets.map((b) => (
             <li key={b.id}>
-              {BET_LABELS[b.kind]} ${b.amount} {b.point !== undefined ? `on ${b.point}` : '(coming)'}
+              {getBetLabel(b.kind, diceCount)} ${b.amount} {b.point !== undefined ? `on ${b.point}` : '(coming)'}
             </li>
           ))}
         </ul>
