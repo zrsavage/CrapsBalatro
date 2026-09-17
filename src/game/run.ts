@@ -36,11 +36,28 @@ function anteMultiplier(ante: number): number {
   return Math.pow(1.35, ante - 1);
 }
 
+/** Extra target growth right where the dice pool grows (Ante 3, Ante 6):
+ * an extra physical die is a free power spike for the player (best-two-of-N
+ * only ever helps), so the target needs to jump harder there too, on top
+ * of its normal exponential climb, or those antes go slack. */
+function diceGrowthBonus(ante: number): number {
+  if (ante >= 6) return 1.35;
+  if (ante >= 3) return 1.15;
+  return 1;
+}
+
+/** Round-target growth rate — steeper than the chip/bankroll scale above
+ * so the run keeps getting harder rather than flattening out once chip
+ * sizes and dice count have both scaled up with it. */
+function targetMultiplier(ante: number): number {
+  return Math.pow(1.45, ante - 1) * diceGrowthBonus(ante);
+}
+
 const ROUND_MULTIPLIER = [1, 1.3, 1.7];
 
 export function buildRoundDef(ante: number, roundIndex: number, rng: () => number): RoundDef {
   const kind = roundKindFor(roundIndex);
-  const target = Math.round(BASE_TARGET * anteMultiplier(ante) * ROUND_MULTIPLIER[roundIndex]);
+  const target = Math.round(BASE_TARGET * targetMultiplier(ante) * ROUND_MULTIPLIER[roundIndex]);
 
   let modifier = undefined as RoundDef['modifier'];
   if (kind === 'boss' || rng() < modifierChance(ante)) {
