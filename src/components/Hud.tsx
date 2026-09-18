@@ -2,6 +2,7 @@ import type { RunState } from '../game/types';
 import { getModifierDef } from '../data/modifiers';
 import { canEndRoundEarly, earlyCashOutBonusPerRoll, effectiveDiceCount } from '../game/engine';
 import { getTierTable } from '../game/diceTiers';
+import { useCountUp } from '../hooks/useCountUp';
 
 const ROUND_NAMES = ['Round 1 of 3', 'Round 2 of 3', 'Boss Round'];
 
@@ -17,6 +18,8 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
   const target = run.currentRound.target;
   const canCashOut = canEndRoundEarly(run);
   const cashOutBonus = run.rollsRemaining * earlyCashOutBonusPerRoll(run);
+  const displayBankroll = useCountUp(run.bankroll);
+  const displayRoundScore = useCountUp(roundScore);
 
   const rightPct = Math.max(0, Math.min(100, (roundScore / target) * 100));
   const lossBasis = Math.max(1, run.roundStartBankroll);
@@ -39,7 +42,7 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
         </div>
         <div className="hud-stat">
           <span className="hud-label">Bankroll</span>
-          <span className="hud-value gold">${run.bankroll}</span>
+          <span className="hud-value gold">${displayBankroll}</span>
         </div>
         <div className="hud-stat">
           <span className="hud-label">Comps</span>
@@ -63,7 +66,7 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
         <div className="hud-target-label">
           <span>Bust: $0</span>
           <span>
-            Net: <strong className={roundScore < 0 ? 'negative' : undefined}>${roundScore}</strong>
+            Net: <strong className={roundScore < 0 ? 'negative' : undefined}>${displayRoundScore}</strong>
           </span>
           <span>Goal: ${target}</span>
         </div>

@@ -25,6 +25,7 @@ export function DiceTray({
   const restingDice: number[] =
     last && last.roll.dice.length === diceCount ? last.roll.dice : Array(diceCount).fill(1);
   const [animatedDice, setAnimatedDice] = useState<number[] | null>(null);
+  const [justLanded, setJustLanded] = useState(false);
   const displayDice = isRolling ? (animatedDice ?? restingDice) : restingDice;
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function DiceTray({
       ticks += 1;
       if (ticks >= totalTicks) {
         setAnimatedDice(pendingRoll.dice);
+        setJustLanded(true);
         clearInterval(interval);
         return;
       }
@@ -43,6 +45,12 @@ export function DiceTray({
     return () => clearInterval(interval);
   }, [isRolling, pendingRoll]);
 
+  useEffect(() => {
+    if (!justLanded) return;
+    const t = setTimeout(() => setJustLanded(false), 320);
+    return () => clearTimeout(t);
+  }, [justLanded]);
+
   const canRoll = run.phase === 'run' && run.rollsRemaining > 0 && !isRolling;
   const shownTotal = isRolling ? pendingRoll?.total : last?.roll.total;
 
@@ -50,7 +58,7 @@ export function DiceTray({
     <div className="panel dice-tray">
       <div className="dice-row">
         {displayDice.map((v, i) => (
-          <Die key={i} value={v} rolling={isRolling} />
+          <Die key={i} value={v} rolling={isRolling && !justLanded} landed={justLanded} />
         ))}
         <div className="dice-total">{shownTotal ?? '–'}</div>
       </div>
@@ -69,10 +77,10 @@ export function DiceTray({
           : 'No Rolls Left'}
       </button>
       {last && !isRolling && (
-        <ul className="roll-feed">
+        <ul className="roll-feed" key={run.history.length}>
           {last.resolutions.length === 0 && <li className="feed-neutral">No bets resolved.</li>}
           {last.resolutions.map((r, i) => (
-            <li key={i} className={`feed-${r.result}`}>
+            <li key={i} className={`feed-${r.result}`} style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}>
               {getBetLabel(r.kind, last.roll.dice.length)}{' '}
               {r.result === 'win'
                 ? `won $${r.payout - r.amount}`
