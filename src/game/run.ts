@@ -95,6 +95,49 @@ export function createInitialRun(seed: number, rng: () => number): RunState {
   };
 }
 
+export const PRACTICE_BANKROLL = 999999;
+export const PRACTICE_ROLLS = 999999;
+
+/** A representative ante to seed chip denominations off of, so practice
+ * betting feels proportional to the dice tier being practiced. */
+function representativeAnteFor(diceCount: number): number {
+  if (diceCount >= 4) return 6;
+  if (diceCount === 3) return 3;
+  return 1;
+}
+
+/** A sandbox run for trying out a dice tier with no stakes: bankroll and
+ * rolls are effectively infinite and there's no round target to clear or
+ * fail, so the engine's normal shop/gameOver transitions never fire. Kept
+ * entirely separate from the player's real run (own store slice, no
+ * achievement tracking) so practicing never touches actual progress. */
+export function createPracticeRun(diceCount: number, seed: number): RunState {
+  const ante = representativeAnteFor(diceCount);
+  const dice: DiceInstance[] = Array.from({ length: diceCount }, (_, i) => ({
+    instanceId: `practice-die-${i}`,
+    defId: 'standard',
+  }));
+  return {
+    seed,
+    ante,
+    roundIndex: 0,
+    bankroll: PRACTICE_BANKROLL,
+    roundStartBankroll: PRACTICE_BANKROLL,
+    comps: 0,
+    cashOutCount: 0,
+    rollsRemaining: PRACTICE_ROLLS,
+    currentRound: { ante, roundIndex: 0, kind: 'comeOut', target: 0, rollLimit: PRACTICE_ROLLS, modifier: undefined },
+    shooter: { phase: 'comeOut', point: null },
+    activeBets: [],
+    dicePool: dice,
+    loadout: dice.map((d) => d.instanceId),
+    relics: [],
+    relicSlots: 0,
+    phase: 'run',
+    history: [],
+  };
+}
+
 function roundToNiceChip(n: number): number {
   if (n < 50) return Math.max(5, Math.round(n / 5) * 5);
   if (n < 500) return Math.round(n / 25) * 25;

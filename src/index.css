@@ -948,6 +948,41 @@ h3 {
   font-size: 0.85rem;
 }
 
+.practice-menu-desc {
+  margin: 0 0 8px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.practice-menu-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.practice-menu-row .secondary-btn {
+  flex: 1;
+  min-width: 100px;
+}
+
+.practice-banner {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.practice-banner-title {
+  display: block;
+  font-size: 1.2rem;
+  color: var(--gold);
+}
+
+.practice-banner-sub {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin: 4px 0 10px;
+}
+
 .end-screen-menu-btn {
   display: block;
   width: 100%;

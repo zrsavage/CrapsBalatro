@@ -10,6 +10,7 @@ import { DiceBag } from './components/DiceBag';
 import { Shop } from './components/Shop';
 import { EndScreen } from './components/EndScreen';
 import { MainMenu } from './components/MainMenu';
+import { PracticeMode } from './components/PracticeMode';
 import { effectiveDiceCount } from './game/engine';
 
 function App() {
@@ -17,6 +18,8 @@ function App() {
   const shop = useGameStore((s) => s.shop);
   const runAchievements = useGameStore((s) => s.runAchievements);
   const screen = useGameStore((s) => s.screen);
+  const isRolling = useGameStore((s) => s.isRolling);
+  const pendingRoll = useGameStore((s) => s.pendingRoll);
   const placeBet = useGameStore((s) => s.placeBet);
   const removeBetsOfKind = useGameStore((s) => s.removeBetsOfKind);
   const roll = useGameStore((s) => s.roll);
@@ -28,6 +31,14 @@ function App() {
   const restartRun = useGameStore((s) => s.restartRun);
   const enterGame = useGameStore((s) => s.enterGame);
   const goToMenu = useGameStore((s) => s.goToMenu);
+  const startPractice = useGameStore((s) => s.startPractice);
+  const exitPractice = useGameStore((s) => s.exitPractice);
+  const practiceRun = useGameStore((s) => s.practiceRun);
+  const practiceIsRolling = useGameStore((s) => s.practiceIsRolling);
+  const practicePendingRoll = useGameStore((s) => s.practicePendingRoll);
+  const practicePlaceBet = useGameStore((s) => s.practicePlaceBet);
+  const practiceRemoveBetsOfKind = useGameStore((s) => s.practiceRemoveBetsOfKind);
+  const practiceRoll = useGameStore((s) => s.practiceRoll);
 
   const selectedSkin = useCosmeticsStore((s) => s.selectedSkin);
   const selectedDice = useCosmeticsStore((s) => s.selectedDice);
@@ -43,8 +54,30 @@ function App() {
   if (screen === 'menu') {
     return (
       <div className="app">
-        <MainMenu run={run} onPlay={enterGame} onNewRun={() => { restartRun(); enterGame(); }} />
+        <MainMenu
+          run={run}
+          onPlay={enterGame}
+          onNewRun={() => {
+            restartRun();
+            enterGame();
+          }}
+          onPractice={startPractice}
+        />
       </div>
+    );
+  }
+
+  if (screen === 'practice' && practiceRun) {
+    return (
+      <PracticeMode
+        run={practiceRun}
+        isRolling={practiceIsRolling}
+        pendingRoll={practicePendingRoll}
+        onPlace={practicePlaceBet}
+        onClearKind={practiceRemoveBetsOfKind}
+        onRoll={practiceRoll}
+        onExit={exitPractice}
+      />
     );
   }
 
@@ -81,9 +114,9 @@ function App() {
       {(run.phase === 'run' || run.phase === 'rolling') && (
         <>
           <Hud run={run} onCashOut={cashOutRound} />
-          <DiceTray run={run} onRoll={roll} />
+          <DiceTray run={run} isRolling={isRolling} pendingRoll={pendingRoll} onRoll={roll} />
           <TableView activeBets={run.activeBets} diceCount={effectiveDiceCount(run)} onClear={removeBetsOfKind} />
-          <BettingTable run={run} onPlace={placeBet} onClearKind={removeBetsOfKind} />
+          <BettingTable run={run} isRolling={isRolling} onPlace={placeBet} onClearKind={removeBetsOfKind} />
           <RelicBar run={run} />
           <DiceBag run={run} onSetLoadout={setLoadout} />
         </>

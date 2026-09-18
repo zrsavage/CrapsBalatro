@@ -4,7 +4,6 @@ import { getBetLabel, isBetAllowedNow } from '../game/bets';
 import { getTierOdds } from '../game/diceTiers';
 import { chipDenominations } from '../game/run';
 import { minBetFor, effectiveDiceCount } from '../game/engine';
-import { useGameStore } from '../state/store';
 
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
@@ -30,10 +29,12 @@ const SIMPLE_ROWS: { title: string; kinds: BetKind[] }[] = [
 
 export function BettingTable({
   run,
+  isRolling,
   onPlace,
   onClearKind,
 }: {
   run: RunState;
+  isRolling: boolean;
   onPlace: (kind: BetKind, amount: number) => void;
   onClearKind: (kind: BetKind) => void;
 }) {
@@ -43,7 +44,6 @@ export function BettingTable({
     setChip(chipDenominations(run.ante)[1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run.ante]);
-  const isRolling = useGameStore((s) => s.isRolling);
   const disabled = run.phase !== 'run' || run.rollsRemaining <= 0 || isRolling;
   const minBet = minBetFor(run);
   const diceCount = effectiveDiceCount(run);
@@ -68,7 +68,7 @@ export function BettingTable({
           </button>
         ))}
         <span className="chip-hint">
-          Tap a spot to bet ${chip}. Bankroll: ${run.bankroll}
+          Tap a spot to bet ${chip}. Bankroll: {run.bankroll >= 999999 ? 'Unlimited' : `$${run.bankroll}`}
           {minBet > 5 && ` · Min bet this round: $${minBet}`}
         </span>
       </div>

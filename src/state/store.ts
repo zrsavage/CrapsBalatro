@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { BetKind, RollOutcome, RollResult, RunState, ShopOffer, ShopState } from '../game/types';
-import { createInitialRun } from '../game/run';
+import { createInitialRun, createPracticeRun, PRACTICE_BANKROLL, PRACTICE_ROLLS } from '../game/run';
 import { mulberry32, makeSeed } from '../game/rng';
 import {
   buyOffer,
@@ -19,7 +19,7 @@ import { useCosmeticsStore } from './cosmeticsStore';
 
 const ROLL_ANIMATION_MS = 950;
 
-export type Screen = 'menu' | 'game';
+export type Screen = 'menu' | 'game' | 'practice';
 
 interface GameStore {
   run: RunState;
@@ -28,7 +28,7 @@ interface GameStore {
   isRolling: boolean;
   pendingRoll: RollResult | null; // the roll dice are animating toward
   runAchievements: string[]; // achievements earned during the current run, revealed on the EndScreen
-  screen: Screen; // top-level UI screen — the main menu, or the active game
+  screen: Screen; // top-level UI screen — the main menu, the active game, or the practice sandbox
   placeBet: (kind: BetKind, amount: number) => void;
   removeBet: (betId: string) => void;
   removeBetsOfKind: (kind: BetKind) => void;
@@ -42,6 +42,18 @@ interface GameStore {
   restartRun: () => void;
   enterGame: () => void;
   goToMenu: () => void;
+
+  // Practice sandbox — a completely separate run so trying out a dice tier
+  // never touches the player's real progress or achievements.
+  practiceRun: RunState | null;
+  practiceRng: (() => number) | null;
+  practiceIsRolling: boolean;
+  practicePendingRoll: RollResult | null;
+  startPractice: (diceCount: number) => void;
+  exitPractice: () => void;
+  practicePlaceBet: (kind: BetKind, amount: number) => void;
+  practiceRemoveBetsOfKind: (kind: BetKind) => void;
+  practiceRoll: () => void;
 }
 
 function freshRun(): { run: RunState; rng: () => number } {
@@ -154,5 +166,64 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     enterGame: () => set({ screen: 'game' }),
     goToMenu: () => set({ screen: 'menu' }),
+
+    practiceRun: null,
+    practiceRng: null,
+    practiceIsRolling: false,
+    practicePendingRoll: null,
+
+    startPractice: (diceCount) => {
+      const seed = makeSeed();
+      set({
+        practiceRun: createPracticeRun(diceCount, seed),
+        practiceRng: mulberry32(seed),
+        practiceIsRolling: false,
+        practicePendingRoll: null,
+        screen: 'practice',
+      });
+    },
+
+    exitPractice: () => set({ screen: 'menu', practiceRun: null, practiceRng: null }),
+
+    practicePlaceBet: (kind, amount) =>
+      set((s) => {
+        if (!s.practiceRun) return {};
+        const next = placeBet(s.practiceRun, kind, amount);
+        return { practiceRun: { ...next, bankroll: PRACTICE_BANKROLL } };
+      }),
+
+    practiceRemoveBetsOfKind: (kind) =>
+      set((s) => {
+        if (!s.practiceRun) return {};
+        const next = removeBetsOfKind(s.practiceRun, kind);
+        return { practiceRun: { ...next, bankroll: PRACTICE_BANKROLL } };
+      }),
+
+    practiceRoll: () => {
+      const { practiceRun, practiceRng, practiceIsRolling } = get();
+      if (!practiceRun || !practiceRng || practiceIsRolling) return;
+
+      primeAudio();
+      playDiceRoll();
+
+      const { run: next, outcome } = rollOnce(practiceRun, practiceRng);
+      set({ practiceIsRolling: true, practicePendingRoll: outcome.roll });
+
+      setTimeout(() => {
+        if (outcome.netChange > 0) playWin();
+        else if (outcome.netChange < 0) playLose();
+        else playNeutral();
+
+        // Never actually run out — always topped back up, no round to clear or fail.
+        const topped: RunState = {
+          ...next,
+          bankroll: PRACTICE_BANKROLL,
+          roundStartBankroll: PRACTICE_BANKROLL,
+          rollsRemaining: PRACTICE_ROLLS,
+          phase: 'run',
+        };
+        set({ practiceRun: topped, practiceIsRolling: false, practicePendingRoll: null });
+      }, ROLL_ANIMATION_MS);
+    },
   };
 });

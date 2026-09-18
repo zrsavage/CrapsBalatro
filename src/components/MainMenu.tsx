@@ -7,10 +7,12 @@ export function MainMenu({
   run,
   onPlay,
   onNewRun,
+  onPractice,
 }: {
   run: RunState;
   onPlay: () => void;
   onNewRun: () => void;
+  onPractice: (diceCount: number) => void;
 }) {
   const unlocked = useCosmeticsStore((s) => s.unlockedAchievements);
   const selectedSkin = useCosmeticsStore((s) => s.selectedSkin);
@@ -44,6 +46,24 @@ export function MainMenu({
             Start a New Run Instead
           </button>
         )}
+      </div>
+
+      <div className="panel main-menu-section">
+        <span className="cosmetics-section-title">Practice Mode</span>
+        <p className="practice-menu-desc">
+          Unlimited money, no losses — just roll and see how the odds feel before it counts.
+        </p>
+        <div className="practice-menu-row">
+          <button className="secondary-btn" onClick={() => onPractice(2)}>
+            2 Dice (Classic)
+          </button>
+          <button className="secondary-btn" onClick={() => onPractice(3)}>
+            3 Dice
+          </button>
+          <button className="secondary-btn" onClick={() => onPractice(4)}>
+            4 Dice
+          </button>
+        </div>
       </div>
 
       <div className="panel main-menu-section">

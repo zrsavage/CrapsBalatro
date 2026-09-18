@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useGameStore } from '../state/store';
-import type { RunState } from '../game/types';
+import type { RollResult, RunState } from '../game/types';
 import { Die } from './Die';
 import { getBetLabel } from '../game/bets';
 import { getTierTable } from '../game/diceTiers';
 
 const SPIN_TICK_MS = 90;
 
-export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void }) {
-  const isRolling = useGameStore((s) => s.isRolling);
-  const pendingRoll = useGameStore((s) => s.pendingRoll);
+export function DiceTray({
+  run,
+  isRolling,
+  pendingRoll,
+  onRoll,
+}: {
+  run: RunState;
+  isRolling: boolean;
+  pendingRoll: RollResult | null;
+  onRoll: () => void;
+}) {
   const last = run.history[run.history.length - 1];
   // The current loadout is the source of truth for dice count — it can
   // change (ante escalation) between rounds before a new roll happens, so
@@ -53,7 +60,13 @@ export function DiceTray({ run, onRoll }: { run: RunState; onRoll: () => void })
         </div>
       )}
       <button className="roll-btn" onClick={onRoll} disabled={!canRoll}>
-        {isRolling ? 'Rolling…' : run.rollsRemaining > 0 ? `Roll (${run.rollsRemaining} left)` : 'No Rolls Left'}
+        {isRolling
+          ? 'Rolling…'
+          : run.rollsRemaining >= 99999
+          ? 'Roll (∞)'
+          : run.rollsRemaining > 0
+          ? `Roll (${run.rollsRemaining} left)`
+          : 'No Rolls Left'}
       </button>
       {last && !isRolling && (
         <ul className="roll-feed">
