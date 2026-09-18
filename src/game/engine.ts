@@ -81,7 +81,12 @@ export function rollOnce(run: RunState, rng: () => number): { run: RunState; out
   });
   const faces: DieFace[] = diceDefs.map((def) => pickFace(def.faces, rng));
 
-  const roll = rollDice(faces, run.activeBets, run.shooter, run.relics, run.currentRound.modifier, rng);
+  let roll = rollDice(faces, run.activeBets, run.shooter, run.relics, run.currentRound.modifier, rng);
+  for (const inst of run.relics) {
+    const def = getRelicDef(inst.defId);
+    if (def?.modifyRoll) roll = def.modifyRoll(roll, run, rng);
+  }
+
   const { resolutions, shooterAfter } = resolveRoll(
     run.activeBets,
     roll,
@@ -107,6 +112,18 @@ export function rollOnce(run: RunState, rng: () => number): { run: RunState; out
     // 'lose' bets are simply dropped; their stake was already deducted at placement.
   }
 
+  for (const inst of run.relics) {
+    const def = getRelicDef(inst.defId);
+    if (def?.bonusPerRoll) bankroll += def.bonusPerRoll(run);
+  }
+
+  const rollsThisRound = run.rollsThisRound + 1;
+  const taxDef = getModifierDef(run.currentRound.modifier)?.periodicTax;
+  if (taxDef && rollsThisRound % taxDef.everyNRolls === 0) {
+    const onTable = remainingBets.reduce((sum, b) => sum + b.amount, 0);
+    bankroll = Math.max(0, bankroll - Math.round(onTable * taxDef.fraction));
+  }
+
   const netChange = resolutions.reduce((sum, r) => {
     if (r.result === 'win') return sum + (r.payout - r.amount);
     if (r.result === 'lose') return sum - r.amount;
@@ -127,6 +144,7 @@ export function rollOnce(run: RunState, rng: () => number): { run: RunState; out
     activeBets: remainingBets,
     shooter: shooterAfter,
     rollsRemaining: run.rollsRemaining - 1,
+    rollsThisRound,
     history: [...run.history, outcome],
   };
 
@@ -173,6 +191,13 @@ function settleRoundEnd(run: RunState): RunState {
   };
 
   if (!hitTarget) {
+    const saveIndex = cleared.relics.findIndex((inst) => !inst.used && getRelicDef(inst.defId)?.consumesOnBust);
+    if (saveIndex !== -1) {
+      const relics = [...cleared.relics];
+      relics[saveIndex] = { ...relics[saveIndex], used: true };
+      const comps = cleared.comps + compsForClearingRound(run.ante);
+      return finalizeSuccess({ ...cleared, relics, comps });
+    }
     return {
       ...cleared,
       phase: 'gameOver',
@@ -227,12 +252,17 @@ export function endRoundEarly(run: RunState): RunState {
 export function startNextRound(run: RunState, rng: () => number): RunState {
   const nextCoords = nextRoundCoords(run.ante, run.roundIndex);
   if (!nextCoords) return run;
-  const round = buildRoundDef(nextCoords.ante, nextCoords.roundIndex, rng);
+  let round = buildRoundDef(nextCoords.ante, nextCoords.roundIndex, rng);
 
   let bonusRolls = 0;
+  let adjustedTarget = round.target;
   for (const inst of run.relics) {
     const def = getRelicDef(inst.defId);
     if (def?.bonusRolls) bonusRolls += def.bonusRolls;
+    if (def?.modifyTarget) adjustedTarget = def.modifyTarget(adjustedTarget, run);
+  }
+  if (adjustedTarget !== round.target) {
+    round = { ...round, target: Math.max(1, Math.round(adjustedTarget)) };
   }
 
   let dicePool = run.dicePool;
@@ -251,6 +281,7 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
     currentRound: round,
     roundStartBankroll: run.bankroll,
     rollsRemaining: round.rollLimit + bonusRolls,
+    rollsThisRound: 0,
     shooter: { phase: 'comeOut', point: null },
     activeBets: [],
     dicePool,

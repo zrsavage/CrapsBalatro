@@ -92,17 +92,14 @@ export interface BetResolution {
   movedToPoint?: number;
 }
 
-export type RelicHookContext = {
-  run: RunState;
-};
-
 export interface RelicDef {
   id: string;
   name: string;
   description: string;
   rarity: Rarity;
   price: number;
-  /** Multiplies a bet's base payout odds before chips are awarded. */
+  /** Multiplies a bet's base payout odds before chips are awarded. Applied
+   * in relic-list order, so multiple owned relics compound multiplicatively. */
   modifyPayoutMultiplier?: (kind: BetKind, base: number) => number;
   /** Flat bonus chips awarded whenever this bet kind wins. */
   bonusOnWin?: (kind: BetKind) => number;
@@ -110,13 +107,26 @@ export interface RelicDef {
   bonusRolls?: number;
   /** One-time bankroll bonus granted the moment this relic is acquired. */
   bonusOnAcquire?: number;
-  /** Called once when a new round begins. */
-  onRoundStart?: (ctx: RelicHookContext) => void;
+  /** Flat (or run-scaled) bankroll delta applied every single roll,
+   * regardless of what bets are on the table or how the roll resolves. */
+  bonusPerRoll?: (run: RunState) => number;
+  /** Adjusts a round's target before it starts (e.g. x0.75 for -25%). */
+  modifyTarget?: (baseTarget: number, run: RunState) => number;
+  /** Transforms the dice/total of every roll AFTER it lands, before bets
+   * are resolved against it — the "change rolls after the fact" hook.
+   * Must keep `total` equal to the sum of `dice`. */
+  modifyRoll?: (roll: RollResult, run: RunState, rng: () => number) => RollResult;
+  /** If true, this relic instance can absorb one round-ending bust,
+   * turning it into a clear instead (consumed — see `RelicInstance.used`). */
+  consumesOnBust?: boolean;
 }
 
 export interface RelicInstance {
   instanceId: string;
   defId: string;
+  /** Set once a one-time/consumable relic effect (e.g. consumesOnBust) has
+   * been spent; the relic stays equipped but its consumable effect is gone. */
+  used?: boolean;
 }
 
 export type RoundKind = 'comeOut' | 'point' | 'boss';
@@ -145,7 +155,9 @@ export type RoundModifierId =
   | 'insideNumbers' // only Place 5/6/8/9 pay
   | 'outsideNumbers' // only Place 4/10 and Field pay
   | 'propsOnly' // only Horn/Hard Ways/Any Craps/Any Seven pay
-  | 'highStakes'; // minimum bet doubled
+  | 'highStakes' // minimum bet doubled
+  | 'evenOnly' // wins only count on an even total — odd numbers don't pay (or lose) anything
+  | 'chipBurn'; // every 3rd roll, the house takes a cut of whatever's still on the table
 
 export type GamePhase = 'run' | 'rolling' | 'shop' | 'gameOver' | 'victory';
 
@@ -158,6 +170,9 @@ export interface RunState {
   comps: number;
   cashOutCount: number;
   rollsRemaining: number;
+  /** Rolls taken so far in the current round (1-indexed after a roll
+   * completes) — drives periodic-effect modifiers like chipBurn. */
+  rollsThisRound: number;
   currentRound: RoundDef;
   shooter: ShooterState;
   activeBets: ActiveBet[];

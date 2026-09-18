@@ -35,6 +35,15 @@ export function getBetLabel(kind: BetKind, diceCount: number): string {
   return `Place ${num}`;
 }
 
+/** Whether a number that would trigger a win/lose/push is "live" this round
+ * — false when a modifier like evenOnly requires the other parity, in
+ * which case that specific number is inert (the bet just keeps waiting). */
+function numberIsLive(total: number, modifier: RoundModifierId | undefined): boolean {
+  const def = getModifierDef(modifier);
+  if (!def?.requiredParity) return true;
+  return def.requiredParity === 'even' ? total % 2 === 0 : total % 2 !== 0;
+}
+
 function computePayout(
   kind: BetKind,
   amount: number,
@@ -145,23 +154,24 @@ function resolveMainLine(
 ): BetResolution[] {
   const isPass = bet.kind === 'pass';
   const barred = table.craps[2]; // the top extreme pushes Don't Pass instead of winning it
+  const live = numberIsLive(total, modifier);
   if (shooter.phase === 'comeOut') {
-    if (total === table.natural1 || total === table.natural2) {
+    if (live && (total === table.natural1 || total === table.natural2)) {
       return [isPass ? win(bet, total, relics, modifier, table) : lose(bet)];
     }
-    if (total === table.craps[0] || total === table.craps[1]) {
+    if (live && (total === table.craps[0] || total === table.craps[1])) {
       return [isPass ? lose(bet) : win(bet, total, relics, modifier, table)];
     }
-    if (total === barred) {
+    if (live && total === barred) {
       return isPass ? [lose(bet)] : [push(bet)];
     }
     return [];
   }
   // point phase
-  if (shooter.point !== null && total === shooter.point) {
+  if (live && shooter.point !== null && total === shooter.point) {
     return [isPass ? win(bet, total, relics, modifier, table) : lose(bet)];
   }
-  if (total === table.natural1) {
+  if (live && total === table.natural1) {
     return [isPass ? lose(bet) : win(bet, total, relics, modifier, table)];
   }
   return [];
@@ -177,15 +187,22 @@ function resolveComeLine(
 ): BetResolution[] {
   const isCome = bet.kind === 'come';
   const barred = table.craps[2];
+  const live = numberIsLive(total, modifier);
   if (bet.point === undefined) {
-    // acts like its own come-out roll
+    // acts like its own come-out roll. Whether a total is a natural/craps/
+    // barred number is fixed regardless of parity (never becomes a point,
+    // same as the shared shooter phase below) — only whether it actually
+    // resolves win/lose/push is parity-gated.
     if (total === table.natural1 || total === table.natural2) {
-      return [isCome ? win(bet, total, relics, modifier, table) : lose(bet)];
+      return live ? [isCome ? win(bet, total, relics, modifier, table) : lose(bet)] : [];
     }
     if (total === table.craps[0] || total === table.craps[1]) {
-      return [isCome ? lose(bet) : win(bet, total, relics, modifier, table)];
+      return live ? [isCome ? lose(bet) : win(bet, total, relics, modifier, table)] : [];
     }
-    if (total === barred) return isCome ? [lose(bet)] : [push(bet)];
+    if (total === barred) {
+      return live ? (isCome ? [lose(bet)] : [push(bet)]) : [];
+    }
+    // any other total becomes this come bet's own point.
     return [
       {
         betId: bet.id,
@@ -198,10 +215,10 @@ function resolveComeLine(
     ];
   }
   // established point for this come bet
-  if (total === bet.point) {
+  if (live && total === bet.point) {
     return [isCome ? win(bet, total, relics, modifier, table) : lose(bet)];
   }
-  if (total === table.natural1) {
+  if (live && total === table.natural1) {
     return [isCome ? lose(bet) : win(bet, total, relics, modifier, table)];
   }
   return [];
@@ -216,9 +233,11 @@ function resolveProp(
   modifier: RoundModifierId | undefined,
   table: DiceTierTable,
 ): BetResolution | null {
+  const live = numberIsLive(total, modifier);
+
   if (bet.kind === 'field') {
     const roll = { total };
-    if (table.field.has(total)) {
+    if (table.field.has(total) && live) {
       return {
         betId: bet.id,
         kind: bet.kind,
@@ -235,9 +254,9 @@ function resolveProp(
   if (bet.kind.startsWith('place')) {
     if (shooter.phase !== 'point') return null; // place bets only work with a point established
     if (total === table.natural1) {
-      return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
+      return live ? { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 } : null;
     }
-    if (total === placeNum) {
+    if (total === placeNum && live) {
       const roll = { total };
       return {
         betId: bet.id,
@@ -252,11 +271,11 @@ function resolveProp(
 
   if (bet.kind.startsWith('hard')) {
     if (total === table.natural1) {
-      return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
+      return live ? { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 } : null;
     }
     if (total === placeNum) {
       const roll = { total };
-      if (isHardRoll) {
+      if (isHardRoll && live) {
         return {
           betId: bet.id,
           kind: bet.kind,
@@ -265,13 +284,13 @@ function resolveProp(
           payout: bet.amount + computePayout(bet.kind, bet.amount, roll, relics, modifier, table),
         };
       }
-      return { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 };
+      return live ? { betId: bet.id, kind: bet.kind, amount: bet.amount, result: 'lose', payout: 0 } : null;
     }
     return null;
   }
 
   if (bet.kind === 'anyCraps') {
-    if (table.craps.includes(total)) {
+    if (table.craps.includes(total) && live) {
       const roll = { total };
       return {
         betId: bet.id,
@@ -285,7 +304,7 @@ function resolveProp(
   }
 
   if (bet.kind.startsWith('horn')) {
-    if (total === placeNum) {
+    if (total === placeNum && live) {
       const roll = { total };
       return {
         betId: bet.id,
@@ -299,7 +318,7 @@ function resolveProp(
   }
 
   if (bet.kind === 'anySeven') {
-    if (total === table.natural1) {
+    if (total === table.natural1 && live) {
       const roll = { total };
       return {
         betId: bet.id,

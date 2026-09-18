@@ -1,153 +1,196 @@
 import type { RelicDef } from '../game/types';
+import { getTierTable } from '../game/diceTiers';
 
 export const RELIC_CATALOG: RelicDef[] = [
   {
-    id: 'iron_cross',
-    name: 'Iron Cross',
-    description: 'The two most central Place numbers pay an extra 15%.',
-    rarity: 'common',
-    price: 5,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'place6' || kind === 'place8' ? base * 1.15 : base),
+    id: 'golden_touch',
+    name: 'Golden Touch',
+    description: 'Every bet kind pays DOUBLE.',
+    rarity: 'rare',
+    price: 32,
+    modifyPayoutMultiplier: (_kind, base) => base * 2,
   },
   {
-    id: 'corner_hustler',
-    name: 'Corner Hustler',
-    description: 'The two longest-odds Place numbers pay an extra 20%.',
-    rarity: 'common',
-    price: 5,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'place4' || kind === 'place10' ? base * 1.2 : base),
-  },
-  {
-    id: 'hard_head',
-    name: 'Hard Head',
-    description: 'All Hard Way bets pay double.',
-    rarity: 'uncommon',
-    price: 7,
+    id: 'iron_fist',
+    name: 'Iron Fist',
+    description: 'All Hard Way bets pay TRIPLE.',
+    rarity: 'rare',
+    price: 18,
     modifyPayoutMultiplier: (kind, base) =>
-      kind === 'hard4' || kind === 'hard6' || kind === 'hard8' || kind === 'hard10' ? base * 2 : base,
+      kind === 'hard4' || kind === 'hard6' || kind === 'hard8' || kind === 'hard10' ? base * 3 : base,
   },
   {
-    id: 'devils_advocate',
-    name: "Devil's Advocate",
-    description: "Don't Pass and Don't Come pay an extra 25%.",
-    rarity: 'common',
-    price: 6,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'dontPass' || kind === 'dontCome' ? base * 1.25 : base),
-  },
-  {
-    id: 'seven_sense',
-    name: 'Seven Sense',
-    description: 'Any Seven pays an extra 50%.',
-    rarity: 'uncommon',
-    price: 6,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'anySeven' ? base * 1.5 : base),
-  },
-  {
-    id: 'snake_eyes_charm',
-    name: 'Snake Eyes Charm',
-    description: 'Any Craps pays an extra 30%.',
-    rarity: 'common',
-    price: 5,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'anyCraps' ? base * 1.3 : base),
-  },
-  {
-    id: 'field_general',
-    name: 'Field General',
-    description: 'Field bets pay an extra 25%.',
-    rarity: 'uncommon',
-    price: 7,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'field' ? base * 1.25 : base),
-  },
-  {
-    id: 'hot_shooter',
-    name: 'Hot Shooter',
-    description: 'Pass Line and Come bets pay an extra 20%.',
-    rarity: 'common',
-    price: 6,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'pass' || kind === 'come' ? base * 1.2 : base),
-  },
-  {
-    id: 'lucky_seven',
-    name: 'Lucky Seven',
-    description: 'Winning an Any Seven bet also pays a flat +$5 bonus.',
+    id: 'horn_of_plenty',
+    name: 'Horn of Plenty',
+    description: 'Horn bets pay an extra 150%, and winning one also pays a flat +$15 bonus.',
     rarity: 'rare',
-    price: 9,
-    bonusOnWin: (kind) => (kind === 'anySeven' ? 5 : 0),
+    price: 16,
+    modifyPayoutMultiplier: (kind, base) =>
+      kind === 'horn2' || kind === 'horn3' || kind === 'horn11' || kind === 'horn12' ? base * 2.5 : base,
+    bonusOnWin: (kind) => (kind === 'horn2' || kind === 'horn3' || kind === 'horn11' || kind === 'horn12' ? 15 : 0),
   },
   {
-    id: 'extra_innings',
-    name: 'Extra Innings',
-    description: 'Start each round with 2 additional rolls.',
+    id: 'snake_eyes_insurance',
+    name: 'Snake Eyes Insurance',
+    description: 'Any Craps pays 4x.',
+    rarity: 'uncommon',
+    price: 14,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'anyCraps' ? base * 4 : base),
+  },
+  {
+    id: 'seven_heaven',
+    name: 'Seven Heaven',
+    description: 'Any Seven pays an extra 150%, and winning it also pays a flat +$10 bonus.',
+    rarity: 'uncommon',
+    price: 12,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'anySeven' ? base * 2.5 : base),
+    bonusOnWin: (kind) => (kind === 'anySeven' ? 10 : 0),
+  },
+  {
+    id: 'place_perfection',
+    name: 'Place Perfection',
+    description: 'All Place bets pay an extra 75%.',
     rarity: 'rare',
+    price: 16,
+    modifyPayoutMultiplier: (kind, base) => (kind.startsWith('place') ? base * 1.75 : base),
+  },
+  {
+    id: 'field_marshal',
+    name: 'Field Marshal',
+    description: 'Field bets pay DOUBLE.',
+    rarity: 'uncommon',
     price: 10,
-    bonusRolls: 2,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'field' ? base * 2 : base),
   },
   {
-    id: 'stacked_bankroll',
-    name: 'Stacked Bankroll',
-    description: 'Gain $100 bankroll immediately when acquired.',
+    id: 'devils_bargain',
+    name: "Devil's Bargain",
+    description: "Don't Pass and Don't Come pay DOUBLE.",
     rarity: 'uncommon',
+    price: 9,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'dontPass' || kind === 'dontCome' ? base * 2 : base),
+  },
+  {
+    id: 'hot_streak',
+    name: 'Hot Streak',
+    description: 'Pass Line and Come bets pay an extra 50%.',
+    rarity: 'common',
     price: 8,
-    bonusOnAcquire: 100,
+    modifyPayoutMultiplier: (kind, base) => (kind === 'pass' || kind === 'come' ? base * 1.5 : base),
+  },
+  {
+    id: 'house_money',
+    name: 'House Money',
+    description: 'Gain a flat +$15 every roll, win or lose.',
+    rarity: 'uncommon',
+    price: 10,
+    bonusPerRoll: () => 15,
+  },
+  {
+    id: 'compound_interest',
+    name: 'Compound Interest',
+    description: 'Gain 2% of your current bankroll every roll — the richer you get, the faster it grows.',
+    rarity: 'rare',
+    price: 20,
+    bonusPerRoll: (run) => Math.round(run.bankroll * 0.02),
+  },
+  {
+    id: 'easy_target',
+    name: 'Easy Target',
+    description: "Every round's target is 25% lower.",
+    rarity: 'rare',
+    price: 18,
+    modifyTarget: (target) => target * 0.75,
+  },
+  {
+    id: 'marathon_runner',
+    name: 'Marathon Runner',
+    description: 'Start each round with 5 additional rolls.',
+    rarity: 'uncommon',
+    price: 10,
+    bonusRolls: 5,
+  },
+  {
+    id: 'second_wind',
+    name: 'Second Wind',
+    description: 'Start each round with 3 additional rolls, and the target is 10% lower.',
+    rarity: 'rare',
+    price: 16,
+    bonusRolls: 3,
+    modifyTarget: (target) => target * 0.9,
+  },
+  {
+    id: 'loaded_dice',
+    name: 'Loaded Dice',
+    description: 'Your lowest physical die is always forced to a 6, every roll.',
+    rarity: 'rare',
+    price: 15,
+    modifyRoll: (roll) => {
+      const dice = [...roll.dice];
+      let minIdx = 0;
+      for (let i = 1; i < dice.length; i++) if (dice[i] < dice[minIdx]) minIdx = i;
+      if (dice[minIdx] === 6) return roll;
+      dice[minIdx] = 6;
+      return { dice, total: dice.reduce((sum, v) => sum + v, 0) };
+    },
+  },
+  {
+    id: 'lucky_nudge',
+    name: 'Lucky Nudge',
+    description: '25% chance each roll to bump your lowest die up by one pip.',
+    rarity: 'uncommon',
+    price: 9,
+    modifyRoll: (roll, _run, rng) => {
+      if (rng() >= 0.25) return roll;
+      const dice = [...roll.dice];
+      let minIdx = -1;
+      for (let i = 0; i < dice.length; i++) {
+        if (dice[i] < 6 && (minIdx === -1 || dice[i] < dice[minIdx])) minIdx = i;
+      }
+      if (minIdx === -1) return roll;
+      dice[minIdx] += 1;
+      return { dice, total: dice.reduce((sum, v) => sum + v, 0) };
+    },
+  },
+  {
+    id: 'second_chance',
+    name: 'Second Chance',
+    description: '25% chance to completely reroll the dice whenever they would seven-out or crap out.',
+    rarity: 'rare',
+    price: 20,
+    modifyRoll: (roll, run, rng) => {
+      const table = getTierTable(roll.dice.length);
+      const wouldSevenOut = run.shooter.phase === 'point' && roll.total === table.natural1;
+      const wouldCrapOut = run.shooter.phase === 'comeOut' && table.craps.includes(roll.total);
+      if (!wouldSevenOut && !wouldCrapOut) return roll;
+      if (rng() >= 0.25) return roll;
+      const dice = roll.dice.map(() => 1 + Math.floor(rng() * 6));
+      return { dice, total: dice.reduce((sum, v) => sum + v, 0) };
+    },
+  },
+  {
+    id: 'comeback_kid',
+    name: 'Comeback Kid',
+    description: "Once, if a round would bust, this relic saves it instead — the round counts as cleared. Consumed on use.",
+    rarity: 'rare',
+    price: 30,
+    consumesOnBust: true,
+  },
+  {
+    id: 'whale_bait',
+    name: 'Whale Bait',
+    description: 'Gain $300 bankroll immediately when acquired.',
+    rarity: 'uncommon',
+    price: 10,
+    bonusOnAcquire: 300,
   },
   {
     id: 'high_roller',
     name: 'High Roller',
-    description: 'Every bet kind pays an extra 10%.',
+    description: 'Every bet kind pays an extra 50%.',
     rarity: 'rare',
-    price: 12,
-    modifyPayoutMultiplier: (_kind, base) => base * 1.1,
-  },
-  {
-    id: 'place_specialist',
-    name: 'Place Specialist',
-    description: 'The two mid-distance Place numbers pay an extra 20%.',
-    rarity: 'common',
-    price: 5,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'place5' || kind === 'place9' ? base * 1.2 : base),
-  },
-  {
-    id: 'grinder',
-    name: 'Grinder',
-    description: 'Winning any Place bet also pays a flat +$3 bonus.',
-    rarity: 'uncommon',
-    price: 7,
-    bonusOnWin: (kind) =>
-      kind === 'place4' || kind === 'place5' || kind === 'place6' || kind === 'place8' || kind === 'place9' || kind === 'place10'
-        ? 3
-        : 0,
-  },
-  {
-    id: 'marathon_shooter',
-    name: 'Marathon Shooter',
-    description: 'Start each round with 1 additional roll.',
-    rarity: 'common',
-    price: 6,
-    bonusRolls: 1,
-  },
-  {
-    id: 'boxcar_horn',
-    name: 'Boxcar Horn',
-    description: 'The two most extreme Horn numbers pay an extra 20%.',
-    rarity: 'uncommon',
-    price: 7,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'horn2' || kind === 'horn12' ? base * 1.2 : base),
-  },
-  {
-    id: 'yo_eleven',
-    name: 'Yo Eleven',
-    description: 'The two near-miss Horn numbers pay an extra 20%.',
-    rarity: 'uncommon',
-    price: 7,
-    modifyPayoutMultiplier: (kind, base) => (kind === 'horn3' || kind === 'horn11' ? base * 1.2 : base),
-  },
-  {
-    id: 'horn_dog',
-    name: 'Horn Dog',
-    description: 'Winning any Horn bet also pays a flat +$4 bonus.',
-    rarity: 'rare',
-    price: 10,
-    bonusOnWin: (kind) => (kind === 'horn2' || kind === 'horn3' || kind === 'horn11' || kind === 'horn12' ? 4 : 0),
+    price: 22,
+    modifyPayoutMultiplier: (_kind, base) => base * 1.5,
   },
 ];
 

@@ -16,6 +16,13 @@ export interface ModifierDef {
   payoutMultiplier?: number;
   rollLimitDelta?: number;
   minBetMultiplier?: number;
+  /** If set, a win is only valid when the number that triggered it has this
+   * parity — the other parity's numbers are inert (neither win nor lose;
+   * a bet waiting on one just keeps waiting). */
+  requiredParity?: 'even' | 'odd';
+  /** Every Nth roll of the round, burn this fraction of whatever's still
+   * sitting in active bets straight off the bankroll. */
+  periodicTax?: { everyNRolls: number; fraction: number };
 }
 
 export const MODIFIERS: ModifierDef[] = [
@@ -30,6 +37,12 @@ export const MODIFIERS: ModifierDef[] = [
   { id: 'outsideNumbers', label: 'Outside Numbers: only the longest-odds Place bets and Field pay', allowedKinds: OUTSIDE_KINDS },
   { id: 'propsOnly', label: 'Proposition Night: only Horn/Hard Ways/one-roll props pay', allowedKinds: PROP_KINDS },
   { id: 'highStakes', label: 'High Stakes: minimum bet doubled', minBetMultiplier: 2 },
+  { id: 'evenOnly', label: "Odd Numbers Don't Work: wins need an even number to land", requiredParity: 'even' },
+  {
+    id: 'chipBurn',
+    label: 'Chip Burn: every 3rd roll, the house takes 25% of the chips on the table',
+    periodicTax: { everyNRolls: 3, fraction: 0.25 },
+  },
 ];
 
 const MODIFIER_BY_ID = new Map(MODIFIERS.map((m) => [m.id, m]));
