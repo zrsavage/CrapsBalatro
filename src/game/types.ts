@@ -157,7 +157,10 @@ export type RoundModifierId =
   | 'propsOnly' // only Horn/Hard Ways/Any Craps/Any Seven pay
   | 'highStakes' // minimum bet doubled
   | 'evenOnly' // wins only count on an even total — odd numbers don't pay (or lose) anything
-  | 'chipBurn'; // every 3rd roll, the house takes a cut of whatever's still on the table
+  | 'chipBurn' // every 3rd roll, the house takes a cut of whatever's still on the table
+  | 'hardWaysOnly' // only Hard Way bets pay
+  | 'hornOnly' // only Horn bets pay
+  | 'fieldComeOnly'; // only Field, Come, and Don't Come pay
 
 export type GamePhase = 'run' | 'rolling' | 'shop' | 'gameOver' | 'victory';
 

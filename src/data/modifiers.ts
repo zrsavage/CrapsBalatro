@@ -5,6 +5,9 @@ const PLACE_KINDS: BetKind[] = ['place4', 'place5', 'place6', 'place8', 'place9'
 const INSIDE_KINDS: BetKind[] = ['place5', 'place6', 'place8', 'place9'];
 const OUTSIDE_KINDS: BetKind[] = ['place4', 'place10', 'field'];
 const PROP_KINDS: BetKind[] = ['horn2', 'horn3', 'horn11', 'horn12', 'hard4', 'hard6', 'hard8', 'hard10', 'anyCraps', 'anySeven'];
+const HARD_KINDS: BetKind[] = ['hard4', 'hard6', 'hard8', 'hard10'];
+const HORN_KINDS: BetKind[] = ['horn2', 'horn3', 'horn11', 'horn12'];
+const FIELD_COME_KINDS: BetKind[] = ['field', 'come', 'dontCome'];
 
 export interface ModifierDef {
   id: RoundModifierId;
@@ -43,6 +46,9 @@ export const MODIFIERS: ModifierDef[] = [
     label: 'Chip Burn: every 3rd roll, the house takes 25% of the chips on the table',
     periodicTax: { everyNRolls: 3, fraction: 0.25 },
   },
+  { id: 'hardWaysOnly', label: 'Hard Ways Only: only Hard Way bets pay', allowedKinds: HARD_KINDS },
+  { id: 'hornOnly', label: 'Horn Only: only Horn bets pay', allowedKinds: HORN_KINDS },
+  { id: 'fieldComeOnly', label: 'Field & Come Only: only Field, Come, and Don\'t Come pay', allowedKinds: FIELD_COME_KINDS },
 ];
 
 const MODIFIER_BY_ID = new Map(MODIFIERS.map((m) => [m.id, m]));
