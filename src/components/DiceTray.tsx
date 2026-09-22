@@ -10,11 +10,13 @@ export function DiceTray({
   run,
   isRolling,
   pendingRoll,
+  rollDurationMs,
   onRoll,
 }: {
   run: RunState;
   isRolling: boolean;
   pendingRoll: RollResult | null;
+  rollDurationMs: number;
   onRoll: () => void;
 }) {
   const last = run.history[run.history.length - 1];
@@ -31,7 +33,7 @@ export function DiceTray({
   useEffect(() => {
     if (!isRolling || !pendingRoll) return; // nothing to animate right now
     let ticks = 0;
-    const totalTicks = 8;
+    const totalTicks = Math.max(4, Math.round(rollDurationMs / SPIN_TICK_MS));
     const interval = setInterval(() => {
       ticks += 1;
       if (ticks >= totalTicks) {
@@ -43,7 +45,7 @@ export function DiceTray({
       setAnimatedDice(pendingRoll.dice.map(() => 1 + Math.floor(Math.random() * 6)));
     }, SPIN_TICK_MS);
     return () => clearInterval(interval);
-  }, [isRolling, pendingRoll]);
+  }, [isRolling, pendingRoll, rollDurationMs]);
 
   useEffect(() => {
     if (!justLanded) return;

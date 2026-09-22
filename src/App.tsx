@@ -10,6 +10,7 @@ import { DiceBag } from './components/DiceBag';
 import { Shop } from './components/Shop';
 import { EndScreen } from './components/EndScreen';
 import { MainMenu } from './components/MainMenu';
+import { OptionsMenu } from './components/OptionsMenu';
 import { PracticeMode } from './components/PracticeMode';
 import { effectiveDiceCount } from './game/engine';
 
@@ -20,6 +21,7 @@ function App() {
   const screen = useGameStore((s) => s.screen);
   const isRolling = useGameStore((s) => s.isRolling);
   const pendingRoll = useGameStore((s) => s.pendingRoll);
+  const rollDurationMs = useGameStore((s) => s.rollDurationMs);
   const placeBet = useGameStore((s) => s.placeBet);
   const removeBetsOfKind = useGameStore((s) => s.removeBetsOfKind);
   const roll = useGameStore((s) => s.roll);
@@ -31,6 +33,7 @@ function App() {
   const restartRun = useGameStore((s) => s.restartRun);
   const enterGame = useGameStore((s) => s.enterGame);
   const goToMenu = useGameStore((s) => s.goToMenu);
+  const goToOptions = useGameStore((s) => s.goToOptions);
   const startPractice = useGameStore((s) => s.startPractice);
   const exitPractice = useGameStore((s) => s.exitPractice);
   const practiceRun = useGameStore((s) => s.practiceRun);
@@ -61,8 +64,16 @@ function App() {
             restartRun();
             enterGame();
           }}
-          onPractice={startPractice}
+          onOptions={goToOptions}
         />
+      </div>
+    );
+  }
+
+  if (screen === 'options') {
+    return (
+      <div className="app">
+        <OptionsMenu onBack={goToMenu} onPractice={startPractice} />
       </div>
     );
   }
@@ -114,7 +125,7 @@ function App() {
       {(run.phase === 'run' || run.phase === 'rolling') && (
         <>
           <Hud run={run} onCashOut={cashOutRound} />
-          <DiceTray run={run} isRolling={isRolling} pendingRoll={pendingRoll} onRoll={roll} />
+          <DiceTray run={run} isRolling={isRolling} pendingRoll={pendingRoll} rollDurationMs={rollDurationMs} onRoll={roll} />
           <TableView activeBets={run.activeBets} diceCount={effectiveDiceCount(run)} onClear={removeBetsOfKind} />
           <BettingTable run={run} isRolling={isRolling} onPlace={placeBet} onClearKind={removeBetsOfKind} />
           <RelicBar run={run} />

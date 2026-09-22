@@ -17,9 +17,21 @@ import { playDiceRoll, playLose, playNeutral, playWin, primeAudio } from '../gam
 import { checkAchievements } from '../data/achievements';
 import { useCosmeticsStore } from './cosmeticsStore';
 
-const ROLL_ANIMATION_MS = 950;
+export const ROLL_ANIMATION_MS = 950;
+const HIGH_STAKES_FRACTION = 0.5;
 
-export type Screen = 'menu' | 'game' | 'practice';
+/** Doubles the roll animation's length when the player has more than half
+ * their total money (bankroll + whatever's currently wagered) riding on
+ * this one roll — a longer, more tense build-up for the rolls that
+ * actually matter. */
+function rollDurationFor(run: RunState): number {
+  const atRisk = run.activeBets.reduce((sum, b) => sum + b.amount, 0);
+  const totalMoney = run.bankroll + atRisk;
+  const highStakes = totalMoney > 0 && atRisk > totalMoney * HIGH_STAKES_FRACTION;
+  return highStakes ? ROLL_ANIMATION_MS * 2 : ROLL_ANIMATION_MS;
+}
+
+export type Screen = 'menu' | 'game' | 'practice' | 'options';
 
 interface GameStore {
   run: RunState;
@@ -27,6 +39,7 @@ interface GameStore {
   shop: ShopState | null;
   isRolling: boolean;
   pendingRoll: RollResult | null; // the roll dice are animating toward
+  rollDurationMs: number; // how long the current/last roll's animation takes — doubled on high-stakes rolls
   runAchievements: string[]; // achievements earned during the current run, revealed on the EndScreen
   screen: Screen; // top-level UI screen — the main menu, the active game, or the practice sandbox
   placeBet: (kind: BetKind, amount: number) => void;
@@ -42,6 +55,7 @@ interface GameStore {
   restartRun: () => void;
   enterGame: () => void;
   goToMenu: () => void;
+  goToOptions: () => void;
 
   // Practice sandbox — a completely separate run so trying out a dice tier
   // never touches the player's real progress or achievements.
@@ -85,6 +99,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     shop: null,
     isRolling: false,
     pendingRoll: null,
+    rollDurationMs: ROLL_ANIMATION_MS,
     runAchievements: [],
     screen: 'menu',
 
@@ -101,8 +116,9 @@ export const useGameStore = create<GameStore>((set, get) => {
       primeAudio();
       playDiceRoll();
 
+      const duration = rollDurationFor(run);
       const { run: next, outcome } = rollOnce(run, rng);
-      set({ isRolling: true, pendingRoll: outcome.roll });
+      set({ isRolling: true, pendingRoll: outcome.roll, rollDurationMs: duration });
 
       setTimeout(() => {
         if (outcome.netChange > 0) playWin();
@@ -112,7 +128,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         const shop = next.phase === 'shop' ? generateShop(next, get().rng) : null;
         const runAchievements = trackAchievements(run, next, outcome, get().runAchievements);
         set({ run: next, shop, isRolling: false, pendingRoll: null, runAchievements });
-      }, ROLL_ANIMATION_MS);
+      }, duration);
     },
 
     cashOutRound: () => {
@@ -166,6 +182,7 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     enterGame: () => set({ screen: 'game' }),
     goToMenu: () => set({ screen: 'menu' }),
+    goToOptions: () => set({ screen: 'options' }),
 
     practiceRun: null,
     practiceRng: null,

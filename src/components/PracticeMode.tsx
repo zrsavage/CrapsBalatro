@@ -3,6 +3,7 @@ import { getTierTable } from '../game/diceTiers';
 import { DiceTray } from './DiceTray';
 import { TableView } from './TableView';
 import { BettingTable } from './BettingTable';
+import { ROLL_ANIMATION_MS } from '../state/store';
 
 export function PracticeMode({
   run,
@@ -36,7 +37,7 @@ export function PracticeMode({
         </button>
       </div>
 
-      <DiceTray run={run} isRolling={isRolling} pendingRoll={pendingRoll} onRoll={onRoll} />
+      <DiceTray run={run} isRolling={isRolling} pendingRoll={pendingRoll} rollDurationMs={ROLL_ANIMATION_MS} onRoll={onRoll} />
       <TableView activeBets={run.activeBets} diceCount={diceCount} onClear={onClearKind} />
       <BettingTable run={run} isRolling={isRolling} onPlace={onPlace} onClearKind={onClearKind} />
     </div>
