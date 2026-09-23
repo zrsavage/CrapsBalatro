@@ -14,6 +14,14 @@ import { getModifierDef } from '../data/modifiers';
 import { buildRoundDef, compsForClearingRound, diceCountForAnte, nextRoundCoords, RELIC_SLOTS } from './run';
 
 export const MIN_BET = 5;
+/** A single spot can never carry more than this fraction of the round's
+ * target — a table limit, in effect. Without it, one lucky roll on a big
+ * enough chip can clear an entire round (or a boss round) outright,
+ * which is exactly what made early rounds feel over in 1-2 rolls: a
+ * single $50-100 pass-line bet already dwarfs a $40-68 target. Capping
+ * bet size relative to target (rather than in flat dollars) keeps the
+ * same ratio — and the same multi-roll pacing — at every ante. */
+const MAX_BET_TARGET_FRACTION = 0.4;
 
 let betCounter = 0;
 function nextBetId(): string {
@@ -26,11 +34,19 @@ export function minBetFor(run: RunState): number {
   return MIN_BET * mult;
 }
 
+/** The most a single spot (summed across every bet already staked on that
+ * kind) may carry this round. */
+export function maxBetFor(run: RunState): number {
+  return Math.max(minBetFor(run), Math.round(run.currentRound.target * MAX_BET_TARGET_FRACTION));
+}
+
 export function placeBet(run: RunState, kind: BetKind, amount: number): RunState {
   if (amount < minBetFor(run)) return run;
   if (amount > run.bankroll) return run;
   if (!isBetAllowedNow(kind, run.shooter, run.currentRound.modifier)) return run;
   if (run.rollsRemaining <= 0 || run.phase !== 'run') return run;
+  const alreadyOnKind = run.activeBets.filter((b) => b.kind === kind).reduce((sum, b) => sum + b.amount, 0);
+  if (alreadyOnKind + amount > maxBetFor(run)) return run;
 
   const bet: ActiveBet = { id: nextBetId(), kind, amount };
   return {

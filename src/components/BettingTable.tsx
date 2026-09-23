@@ -3,7 +3,7 @@ import type { BetKind, RunState } from '../game/types';
 import { getBetLabel, isBetAllowedNow } from '../game/bets';
 import { getTierOdds } from '../game/diceTiers';
 import { chipDenominations } from '../game/run';
-import { minBetFor, effectiveDiceCount } from '../game/engine';
+import { minBetFor, maxBetFor, effectiveDiceCount } from '../game/engine';
 
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
@@ -46,6 +46,7 @@ export function BettingTable({
   }, [run.ante]);
   const disabled = run.phase !== 'run' || run.rollsRemaining <= 0 || isRolling;
   const minBet = minBetFor(run);
+  const maxBet = maxBetFor(run);
   const diceCount = effectiveDiceCount(run);
 
   const totalsByKind = new Map<BetKind, number>();
@@ -70,6 +71,7 @@ export function BettingTable({
         <span className="chip-hint">
           Tap a spot to bet ${chip}. Bankroll: {run.bankroll >= 999999 ? 'Unlimited' : `$${run.bankroll}`}
           {minBet > 5 && ` · Min bet this round: $${minBet}`}
+          {run.bankroll < 999999 && ` · Max per spot: $${maxBet}`}
         </span>
       </div>
 
@@ -77,18 +79,27 @@ export function BettingTable({
         <div className="bet-row" key={row.title}>
           <span className="bet-row-title">{row.title}</span>
           <div className="bet-spots">
-            {row.kinds.map((kind) => (
-              <BetSpot
-                key={kind}
-                label={getBetLabel(kind, diceCount)}
-                odds={oddsLabel(kind, diceCount)}
-                amount={totalsByKind.get(kind) ?? 0}
-                allowed={!disabled && isBetAllowedNow(kind, run.shooter, run.currentRound.modifier) && chip <= run.bankroll && chip >= minBet}
-                clearAllowed={!isRolling}
-                onAdd={() => onPlace(kind, chip)}
-                onClear={() => onClearKind(kind)}
-              />
-            ))}
+            {row.kinds.map((kind) => {
+              const already = totalsByKind.get(kind) ?? 0;
+              return (
+                <BetSpot
+                  key={kind}
+                  label={getBetLabel(kind, diceCount)}
+                  odds={oddsLabel(kind, diceCount)}
+                  amount={already}
+                  allowed={
+                    !disabled &&
+                    isBetAllowedNow(kind, run.shooter, run.currentRound.modifier) &&
+                    chip <= run.bankroll &&
+                    chip >= minBet &&
+                    already + chip <= maxBet
+                  }
+                  clearAllowed={!isRolling}
+                  onAdd={() => onPlace(kind, chip)}
+                  onClear={() => onClearKind(kind)}
+                />
+              );
+            })}
           </div>
         </div>
       ))}
@@ -98,14 +109,26 @@ export function BettingTable({
         <div className="bet-spots">
           <button
             className="bet-spot bet-spot-action"
-            disabled={disabled || !isBetAllowedNow('come', run.shooter, run.currentRound.modifier) || chip > run.bankroll || chip < minBet}
+            disabled={
+              disabled ||
+              !isBetAllowedNow('come', run.shooter, run.currentRound.modifier) ||
+              chip > run.bankroll ||
+              chip < minBet ||
+              (totalsByKind.get('come') ?? 0) + chip > maxBet
+            }
             onClick={() => onPlace('come', chip)}
           >
             + Come
           </button>
           <button
             className="bet-spot bet-spot-action"
-            disabled={disabled || !isBetAllowedNow('dontCome', run.shooter, run.currentRound.modifier) || chip > run.bankroll || chip < minBet}
+            disabled={
+              disabled ||
+              !isBetAllowedNow('dontCome', run.shooter, run.currentRound.modifier) ||
+              chip > run.bankroll ||
+              chip < minBet ||
+              (totalsByKind.get('dontCome') ?? 0) + chip > maxBet
+            }
             onClick={() => onPlace('dontCome', chip)}
           >
             + Don't Come
