@@ -62,7 +62,7 @@ function computePayout(
   for (const inst of relics) {
     const def = getRelicDef(inst.defId);
     if (def?.modifyPayoutMultiplier) {
-      profit = def.modifyPayoutMultiplier(kind, profit);
+      profit = def.modifyPayoutMultiplier(kind, profit, modifier);
     }
     if (def?.bonusOnWin) {
       profit += def.bonusOnWin(kind);

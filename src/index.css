@@ -444,6 +444,14 @@ h3 {
   color: var(--lose);
 }
 
+.run-seed-label {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-align: right;
+  user-select: text;
+}
+
 /* Dice tray */
 .dice-row {
   display: flex;
@@ -888,6 +896,10 @@ h3 {
   background: var(--panel-light);
 }
 
+.relic-chip-curse {
+  border-color: var(--lose);
+}
+
 .rarity-uncommon {
   border-color: #6fb8ff;
 }
@@ -995,6 +1007,25 @@ h3 {
   font-size: 0.65rem;
   text-transform: uppercase;
   color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.offer-card-curse {
+  border-color: var(--lose);
+}
+
+.curse-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--lose);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 4px;
 }
 
 .offer-name {
@@ -1038,6 +1069,81 @@ h3 {
 .secondary-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Round select / boss preview */
+.round-select {
+  text-align: center;
+}
+
+.round-select-title {
+  margin: 0 0 6px;
+}
+
+.round-select-sub {
+  color: var(--text-dim);
+  margin: 0 0 16px;
+  font-size: 0.92rem;
+}
+
+.round-select-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+}
+
+.round-choice-card {
+  flex: 1 1 220px;
+  max-width: 320px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px;
+  background: var(--panel-light);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.round-choice-risky {
+  border-color: var(--lose);
+  box-shadow: 0 0 12px var(--shadow);
+}
+
+.round-choice-kind {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.round-choice-label {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.round-choice-stats {
+  display: flex;
+  gap: 14px;
+  font-size: 0.9rem;
+}
+
+.round-choice-modifier {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--lose);
+  background: color-mix(in srgb, var(--lose) 12%, transparent);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.round-choice-blurb {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0;
+  flex-grow: 1;
 }
 
 /* End screen */
@@ -1099,6 +1205,7 @@ h3 {
 
 .menu-new-run-btn,
 .menu-options-btn,
+.menu-stats-btn,
 .menu-back-btn {
   display: block;
   width: 100%;
@@ -1131,6 +1238,84 @@ h3 {
 .practice-menu-row .secondary-btn {
   flex: 1;
   min-width: 100px;
+}
+
+.seed-entry-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.seed-entry-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--gold-dim);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+/* Stats screen */
+.stats-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .stats-summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stats-summary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--panel-light);
+  border: 1px solid var(--gold-dim);
+}
+
+.run-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.run-history-list li {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.8fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--panel-light);
+  font-size: 0.8rem;
+}
+
+.run-history-win {
+  border-left: 3px solid var(--win);
+}
+
+.run-history-loss {
+  border-left: 3px solid var(--lose);
+}
+
+.run-history-result {
+  font-weight: 700;
+}
+
+.run-history-date,
+.run-history-seed {
+  color: var(--text-dim);
+  font-size: 0.72rem;
 }
 
 .practice-banner {

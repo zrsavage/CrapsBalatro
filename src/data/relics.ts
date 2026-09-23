@@ -192,6 +192,68 @@ export const RELIC_CATALOG: RelicDef[] = [
     price: 22,
     modifyPayoutMultiplier: (_kind, base) => base * 1.5,
   },
+
+  // --- Synergy relics: their power depends on how you're already playing ---
+  {
+    id: 'defiant_streak',
+    name: 'Defiant Streak',
+    description: "Whenever the round has an active modifier, every bet pays an extra 50% — plain rounds get nothing extra.",
+    rarity: 'rare',
+    price: 18,
+    modifyPayoutMultiplier: (_kind, base, modifier) => (modifier ? base * 1.5 : base),
+  },
+  {
+    id: 'collectors_edge',
+    name: "Collector's Edge",
+    description: 'Gain +$3 every roll for each relic you own (including this one) — the more relics, the more it pays.',
+    rarity: 'uncommon',
+    price: 11,
+    bonusPerRoll: (run) => run.relics.length * 3,
+  },
+  {
+    id: 'underdog_fire',
+    name: "Underdog's Fire",
+    description: "While you're still behind this round's target, gain a flat bonus every roll to help you catch up.",
+    rarity: 'uncommon',
+    price: 9,
+    bonusPerRoll: (run) => (run.bankroll - run.roundStartBankroll < run.currentRound.target ? 6 + run.ante : 0),
+  },
+
+  // --- Curse relics: a real drawback, for a much bigger upside ---
+  {
+    id: 'blood_money',
+    name: 'Blood Money',
+    description: 'CURSE: every bet kind pays MORE THAN DOUBLE (2.2x) — but you bleed chips every single roll, win or lose.',
+    rarity: 'rare',
+    price: 13,
+    curse: true,
+    modifyPayoutMultiplier: (_kind, base) => base * 2.2,
+    bonusPerRoll: (run) => -(4 + run.ante),
+  },
+  {
+    id: 'greedy_pact',
+    name: 'Greedy Pact',
+    description: "CURSE: every round's target is 25% higher — but every bet kind pays an extra 60%.",
+    rarity: 'rare',
+    price: 12,
+    curse: true,
+    modifyTarget: (target) => target * 1.25,
+    modifyPayoutMultiplier: (_kind, base) => base * 1.6,
+  },
+  {
+    id: 'unstable_core',
+    name: 'Unstable Core',
+    description: 'CURSE: $250 cash the moment you take it — but every roll has a 15% chance to completely reroll the dice out from under you.',
+    rarity: 'uncommon',
+    price: 7,
+    curse: true,
+    bonusOnAcquire: 250,
+    modifyRoll: (roll, _run, rng) => {
+      if (rng() >= 0.15) return roll;
+      const dice = roll.dice.map(() => 1 + Math.floor(rng() * 6));
+      return { dice, total: dice.reduce((sum, v) => sum + v, 0) };
+    },
+  },
 ];
 
 const RELIC_BY_ID = new Map(RELIC_CATALOG.map((r) => [r.id, r]));

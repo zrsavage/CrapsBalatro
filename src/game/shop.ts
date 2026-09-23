@@ -12,7 +12,7 @@ function nextOfferId(): string {
   return `offer-${offerCounter}`;
 }
 
-export function generateShop(run: RunState, rng: () => number): ShopState {
+export function generateShop(run: RunState, rng: () => number, unlockedDieDefs: ReadonlySet<string> = new Set()): ShopState {
   const ownedRelicIds = new Set(run.relics.map((r) => r.defId));
   const availableRelics = RELIC_CATALOG.filter((r) => !ownedRelicIds.has(r.id));
 
@@ -24,7 +24,7 @@ export function generateShop(run: RunState, rng: () => number): ShopState {
     relicOffers.push({ id: nextOfferId(), type: 'relic', refId: def.id, price: def.price });
   }
 
-  const purchasableDice = DICE_CATALOG.filter((d) => d.id !== 'standard');
+  const purchasableDice = DICE_CATALOG.filter((d) => d.id !== 'standard' && (!d.locked || unlockedDieDefs.has(d.id)));
   const dieOffers: ShopOffer[] = [];
   for (let i = 0; i < DIE_OFFER_COUNT; i++) {
     const def = purchasableDice[randInt(rng, 0, purchasableDice.length - 1)];

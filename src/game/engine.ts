@@ -3,6 +3,7 @@ import type {
   BetKind,
   DieFace,
   RollOutcome,
+  RoundChoice,
   RunState,
   ShopOffer,
 } from './types';
@@ -11,7 +12,7 @@ import { rollDice } from './dice';
 import { getDieDef } from '../data/dice';
 import { getRelicDef } from '../data/relics';
 import { getModifierDef } from '../data/modifiers';
-import { buildRoundDef, compsForClearingRound, diceCountForAnte, nextRoundCoords, RELIC_SLOTS } from './run';
+import { buildRoundChoices, compsForClearingRound, diceCountForAnte, nextRoundCoords, RELIC_SLOTS } from './run';
 
 export const MIN_BET = 5;
 /** A single spot can never carry more than this fraction of the round's
@@ -211,7 +212,7 @@ function settleRoundEnd(run: RunState): RunState {
     if (saveIndex !== -1) {
       const relics = [...cleared.relics];
       relics[saveIndex] = { ...relics[saveIndex], used: true };
-      const comps = cleared.comps + compsForClearingRound(run.ante);
+      const comps = cleared.comps + compsForClearingRound(run.ante, run.currentRound.rewardMultiplier);
       return finalizeSuccess({ ...cleared, relics, comps });
     }
     return {
@@ -226,7 +227,7 @@ function settleRoundEnd(run: RunState): RunState {
     };
   }
 
-  const comps = cleared.comps + compsForClearingRound(run.ante);
+  const comps = cleared.comps + compsForClearingRound(run.ante, run.currentRound.rewardMultiplier);
   return finalizeSuccess({ ...cleared, comps });
 }
 
@@ -253,7 +254,7 @@ export function endRoundEarly(run: RunState): RunState {
   const cleared: RunState = {
     ...run,
     bankroll: run.bankroll + refund + bonus,
-    comps: run.comps + compsForClearingRound(run.ante) + bonusComps,
+    comps: run.comps + compsForClearingRound(run.ante, run.currentRound.rewardMultiplier) + bonusComps,
     cashOutCount: run.cashOutCount + 1,
     activeBets: [],
     rollsRemaining: 0,
@@ -261,14 +262,24 @@ export function endRoundEarly(run: RunState): RunState {
   return finalizeSuccess(cleared);
 }
 
-/** Called when the player leaves the shop to start the next round. Also
- * grows the dice pool/loadout automatically when the new ante's dice count
- * exceeds what's currently equipped, so the board gets bigger at Ante 3
- * and Ante 6 without any purchase required. */
-export function startNextRound(run: RunState, rng: () => number): RunState {
+/** Called when the player leaves the shop. Builds the round choice(s) for
+ * what comes next (a real choice for a regular round, a single preview
+ * card for a forced boss round) and parks the run in 'roundSelect' until
+ * the player commits via confirmRoundChoice. */
+export function beginRoundSelect(run: RunState, rng: () => number): RunState {
   const nextCoords = nextRoundCoords(run.ante, run.roundIndex);
   if (!nextCoords) return run;
-  let round = buildRoundDef(nextCoords.ante, nextCoords.roundIndex, rng);
+  const roundChoices = buildRoundChoices(nextCoords.ante, nextCoords.roundIndex, rng);
+  return { ...run, phase: 'roundSelect', roundChoices };
+}
+
+/** Commits to one of the round choices offered by beginRoundSelect and
+ * actually starts it. Also grows the dice pool/loadout automatically when
+ * the new ante's dice count exceeds what's currently equipped, so the
+ * board gets bigger at Ante 3 and Ante 6 without any purchase required. */
+export function confirmRoundChoice(run: RunState, choice: RoundChoice): RunState {
+  if (run.phase !== 'roundSelect' || !run.roundChoices?.some((c) => c.id === choice.id)) return run;
+  let round = choice.round;
 
   let bonusRolls = 0;
   let adjustedTarget = round.target;
@@ -283,17 +294,17 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
 
   let dicePool = run.dicePool;
   let loadout = run.loadout;
-  const requiredDice = diceCountForAnte(nextCoords.ante);
+  const requiredDice = diceCountForAnte(round.ante);
   while (loadout.length < requiredDice) {
-    const newDie = { instanceId: `die-standard-auto-${nextCoords.ante}-${loadout.length}`, defId: 'standard' };
+    const newDie = { instanceId: `die-standard-auto-${round.ante}-${loadout.length}`, defId: 'standard' };
     dicePool = [...dicePool, newDie];
     loadout = [...loadout, newDie.instanceId];
   }
 
   return {
     ...run,
-    ante: nextCoords.ante,
-    roundIndex: nextCoords.roundIndex,
+    ante: round.ante,
+    roundIndex: round.roundIndex,
     currentRound: round,
     roundStartBankroll: run.bankroll,
     rollsRemaining: round.rollLimit + bonusRolls,
@@ -303,6 +314,7 @@ export function startNextRound(run: RunState, rng: () => number): RunState {
     dicePool,
     loadout,
     phase: 'run',
+    roundChoices: undefined,
   };
 }
 

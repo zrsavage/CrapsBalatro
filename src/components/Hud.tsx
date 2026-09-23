@@ -89,6 +89,9 @@ export function Hud({ run, onCashOut }: { run: RunState; onCashOut: () => void }
       {run.currentRound.modifier && (
         <div className="boss-banner">⚠ {getModifierDef(run.currentRound.modifier)?.label}</div>
       )}
+      <div className="run-seed-label" title="Share this seed so someone else can play the exact same run">
+        Seed: {run.seed}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { RollOutcome, RunState } from '../game/types';
 
-export type UnlockKind = 'skin' | 'dice' | 'trophy';
+export type UnlockKind = 'skin' | 'dice' | 'dieDef' | 'trophy';
 
 export interface AchievementDef {
   id: string;
@@ -8,7 +8,7 @@ export interface AchievementDef {
   description: string;
   tier: 1 | 2;
   unlockKind: UnlockKind;
-  unlockId?: string; // skin id or dice id, when unlockKind isn't 'trophy'
+  unlockId?: string; // skin id, dice-color id, or DieDef id, when unlockKind isn't 'trophy'
   unlockLabel: string;
 }
 
@@ -120,6 +120,35 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     unlockKind: 'trophy',
     unlockLabel: 'Bragging rights',
   },
+
+  // Legendary dice — genuinely rare functional dice, not just cosmetics.
+  {
+    id: 'four_dice_club',
+    name: 'Four Dice Club',
+    description: 'Reach Ante 6, where the board grows to 4 dice.',
+    tier: 2,
+    unlockKind: 'dieDef',
+    unlockId: 'twin_wild',
+    unlockLabel: 'Twin Wild Die (shop unlock)',
+  },
+  {
+    id: 'century_club',
+    name: 'Century Club',
+    description: 'Use Cash Out Now five times in one run.',
+    tier: 2,
+    unlockKind: 'dieDef',
+    unlockId: 'devils_snake_eyes',
+    unlockLabel: "Devil's Snake Eyes Die (shop unlock)",
+  },
+  {
+    id: 'grand_slam',
+    name: 'Grand Slam',
+    description: 'Reach a $10,000 bankroll at any point in a run.',
+    tier: 2,
+    unlockKind: 'dieDef',
+    unlockId: 'fortune_seeker',
+    unlockLabel: 'Fortune Seeker Die (shop unlock)',
+  },
 ];
 
 const ACHIEVEMENT_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -151,9 +180,12 @@ export function checkAchievements(
   }
 
   if (Math.max(prevRun.ante, nextRun.ante) >= 4) unlock('ante_four');
+  if (Math.max(prevRun.ante, nextRun.ante) >= 6) unlock('four_dice_club');
   if (Math.max(prevRun.ante, nextRun.ante) >= 8) unlock('final_table');
   if (nextRun.cashOutCount >= 3) unlock('quick_draw');
+  if (nextRun.cashOutCount >= 5) unlock('century_club');
   if (Math.max(prevRun.bankroll, nextRun.bankroll) >= 5000) unlock('whale');
+  if (Math.max(prevRun.bankroll, nextRun.bankroll) >= 10000) unlock('grand_slam');
   if (nextRun.relics.length >= nextRun.relicSlots) unlock('fully_loaded');
 
   if (nextRun.phase === 'victory') {

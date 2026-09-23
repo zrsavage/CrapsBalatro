@@ -65,6 +65,35 @@ export const DICE_CATALOG: DieDef[] = [
     price: 8,
     rarity: 'uncommon',
   },
+
+  // --- Legendary dice: not in the normal shop rotation, unlocked by achievement ---
+  {
+    id: 'twin_wild',
+    name: 'Twin Wild Die',
+    description: 'LEGENDARY: TWO Wild faces — resolves to whatever helps your bets most, twice as often.',
+    faces: [2, 3, 4, 5, 'wild', 'wild'],
+    price: 26,
+    rarity: 'rare',
+    locked: true,
+  },
+  {
+    id: 'devils_snake_eyes',
+    name: "Devil's Snake Eyes Die",
+    description: 'LEGENDARY: all-or-nothing — three faces of 1, three faces of 6, nothing in between.',
+    faces: [1, 1, 1, 6, 6, 6],
+    price: 20,
+    rarity: 'rare',
+    locked: true,
+  },
+  {
+    id: 'fortune_seeker',
+    name: 'Fortune Seeker Die',
+    description: "LEGENDARY: a Wild face plus faces weighted toward the big numbers — built for chasing the highest tier's targets.",
+    faces: [4, 5, 6, 6, 'wild', 'wild'],
+    price: 30,
+    rarity: 'rare',
+    locked: true,
+  },
 ];
 
 const DICE_BY_ID = new Map(DICE_CATALOG.map((d) => [d.id, d]));

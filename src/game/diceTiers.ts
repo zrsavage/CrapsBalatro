@@ -159,6 +159,55 @@ export function numberForKind(table: DiceTierTable, kind: BetKind): number | und
   );
 }
 
+function pct(x: number): string {
+  return `${(x * 100).toFixed(1)}%`;
+}
+
+/** Plain-English explanation of what wins a given bet kind at this dice
+ * tier, plus the underlying win probability where it's a single, well-
+ * defined number (helpful for the 3/4-dice tiers, where the winning
+ * numbers shift away from the classic 2-dice ones players already know). */
+export function describeBetOdds(kind: BetKind, diceCount: number): string {
+  const table = getTierTable(diceCount);
+  const p = (s: number) => table.probabilities.get(s) ?? 0;
+
+  if (kind === 'pass' || kind === 'come') {
+    const comeOutWin = p(table.natural1) + p(table.natural2);
+    return `Wins on ${table.natural1} or ${table.natural2} right away (${pct(comeOutWin)} chance). Loses on ${table.craps.join('/')}. Any other number becomes the point — then wins if that point repeats before a ${table.natural1}.`;
+  }
+  if (kind === 'dontPass' || kind === 'dontCome') {
+    return `Wins on ${table.craps[0]} or ${table.craps[1]} right away, pushes on ${table.craps[2]}. Loses on ${table.natural1} or ${table.natural2}. Otherwise wins if a ${table.natural1} shows before the point repeats.`;
+  }
+  if (kind === 'field') {
+    const nums = [...table.field].sort((a, b) => a - b);
+    const prob = nums.reduce((sum, n) => sum + p(n), 0);
+    return `One-roll bet. Wins on ${nums.join(', ')} (${pct(prob)} chance this roll).`;
+  }
+  if (kind === 'anyCraps') {
+    const prob = table.craps.reduce((sum, n) => sum + p(n), 0);
+    return `One-roll bet. Wins on ${table.craps.join(', ')} (${pct(prob)} chance this roll).`;
+  }
+  if (kind === 'anySeven') {
+    return `One-roll bet. Wins on ${table.natural1} (${pct(p(table.natural1))} chance this roll).`;
+  }
+  if (kind.startsWith('horn')) {
+    const num = numberForKind(table, kind);
+    return `One-roll bet on ${num} exactly (${pct(p(num ?? 0))} chance this roll) — long odds, big payout.`;
+  }
+  if (kind.startsWith('hard')) {
+    const num = numberForKind(table, kind);
+    return `Wins if all ${diceCount} dice match, totaling ${num} — before ${num} rolls any other way or a ${table.natural1} shows.`;
+  }
+  if (kind.startsWith('place')) {
+    const num = numberForKind(table, kind);
+    const pWin = p(num ?? 0);
+    const pLose = p(table.natural1);
+    const winChance = pWin / (pWin + pLose);
+    return `Wins if ${num} rolls before a ${table.natural1} (${pct(winChance)} chance once it's working).`;
+  }
+  return '';
+}
+
 /** The original, hand-tuned 2-dice odds table (unchanged from before this
  * dice-tier rework — preserved exactly rather than re-derived, since it's
  * already shipped and balance-tested). 3 and 4 dice compute fresh odds

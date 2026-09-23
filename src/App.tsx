@@ -8,9 +8,11 @@ import { BettingTable } from './components/BettingTable';
 import { RelicBar } from './components/RelicBar';
 import { DiceBag } from './components/DiceBag';
 import { Shop } from './components/Shop';
+import { RoundSelect } from './components/RoundSelect';
 import { EndScreen } from './components/EndScreen';
 import { MainMenu } from './components/MainMenu';
 import { OptionsMenu } from './components/OptionsMenu';
+import { StatsScreen } from './components/StatsScreen';
 import { PracticeMode } from './components/PracticeMode';
 import { effectiveDiceCount } from './game/engine';
 
@@ -30,10 +32,13 @@ function App() {
   const rerollShop = useGameStore((s) => s.rerollShop);
   const setLoadout = useGameStore((s) => s.setLoadout);
   const continueToNextRound = useGameStore((s) => s.continueToNextRound);
+  const chooseRound = useGameStore((s) => s.chooseRound);
   const restartRun = useGameStore((s) => s.restartRun);
+  const startSeededRun = useGameStore((s) => s.startSeededRun);
   const enterGame = useGameStore((s) => s.enterGame);
   const goToMenu = useGameStore((s) => s.goToMenu);
   const goToOptions = useGameStore((s) => s.goToOptions);
+  const goToStats = useGameStore((s) => s.goToStats);
   const startPractice = useGameStore((s) => s.startPractice);
   const exitPractice = useGameStore((s) => s.exitPractice);
   const practiceRun = useGameStore((s) => s.practiceRun);
@@ -65,6 +70,8 @@ function App() {
             enterGame();
           }}
           onOptions={goToOptions}
+          onStartSeeded={startSeededRun}
+          onStats={goToStats}
         />
       </div>
     );
@@ -74,6 +81,14 @@ function App() {
     return (
       <div className="app">
         <OptionsMenu onBack={goToMenu} onPractice={startPractice} />
+      </div>
+    );
+  }
+
+  if (screen === 'stats') {
+    return (
+      <div className="app">
+        <StatsScreen onBack={goToMenu} />
       </div>
     );
   }
@@ -121,6 +136,8 @@ function App() {
           onContinue={continueToNextRound}
         />
       )}
+
+      {run.phase === 'roundSelect' && <RoundSelect run={run} onChoose={chooseRound} />}
 
       {(run.phase === 'run' || run.phase === 'rolling') && (
         <>

@@ -13,7 +13,12 @@ export function RelicBar({ run }: { run: RunState }) {
           const def = getRelicDef(inst.defId);
           if (!def) return null;
           return (
-            <div className={`relic-chip rarity-${def.rarity}`} key={inst.instanceId} title={def.description}>
+            <div
+              className={`relic-chip rarity-${def.rarity}${def.curse ? ' relic-chip-curse' : ''}`}
+              key={inst.instanceId}
+              title={def.description}
+            >
+              {def.curse && <span className="curse-badge">CURSE</span>}
               {def.name}
             </div>
           );

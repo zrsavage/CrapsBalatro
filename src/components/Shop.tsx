@@ -63,10 +63,14 @@ function OfferCard({
   const rarity = relicDef?.rarity ?? dieDef?.rarity ?? 'common';
   const relicsFull = offer.type === 'relic' && run.relics.length >= run.relicSlots;
   const canAfford = run.comps >= offer.price;
+  const isCurse = relicDef?.curse ?? false;
 
   return (
-    <div className={`offer-card rarity-${rarity}`}>
-      <div className="offer-type">{offer.type === 'relic' ? 'Relic' : 'Die'}</div>
+    <div className={`offer-card rarity-${rarity}${isCurse ? ' offer-card-curse' : ''}`}>
+      <div className="offer-type">
+        {offer.type === 'relic' ? 'Relic' : 'Die'}
+        {isCurse && <span className="curse-badge">CURSE</span>}
+      </div>
       <div className="offer-name">{name}</div>
       {dieDef && <DieFaces faces={dieDef.faces} />}
       <div className="offer-desc">{desc}</div>

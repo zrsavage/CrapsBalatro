@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { BetKind, RunState } from '../game/types';
 import { getBetLabel, isBetAllowedNow } from '../game/bets';
-import { getTierOdds } from '../game/diceTiers';
+import { describeBetOdds, getTierOdds } from '../game/diceTiers';
 import { chipDenominations } from '../game/run';
 import { minBetFor, maxBetFor, effectiveDiceCount } from '../game/engine';
 
@@ -86,6 +86,7 @@ export function BettingTable({
                   key={kind}
                   label={getBetLabel(kind, diceCount)}
                   odds={oddsLabel(kind, diceCount)}
+                  info={describeBetOdds(kind, diceCount)}
                   amount={already}
                   allowed={
                     !disabled &&
@@ -109,6 +110,7 @@ export function BettingTable({
         <div className="bet-spots">
           <button
             className="bet-spot bet-spot-action"
+            title={describeBetOdds('come', diceCount)}
             disabled={
               disabled ||
               !isBetAllowedNow('come', run.shooter, run.currentRound.modifier) ||
@@ -122,6 +124,7 @@ export function BettingTable({
           </button>
           <button
             className="bet-spot bet-spot-action"
+            title={describeBetOdds('dontCome', diceCount)}
             disabled={
               disabled ||
               !isBetAllowedNow('dontCome', run.shooter, run.currentRound.modifier) ||
@@ -152,6 +155,7 @@ export function BettingTable({
 function BetSpot({
   label,
   odds,
+  info,
   amount,
   allowed,
   clearAllowed,
@@ -160,6 +164,7 @@ function BetSpot({
 }: {
   label: string;
   odds: string;
+  info: string;
   amount: number;
   allowed: boolean;
   clearAllowed: boolean;
@@ -168,7 +173,7 @@ function BetSpot({
 }) {
   return (
     <div className={`bet-spot${amount > 0 ? ' bet-spot-active' : ''}`}>
-      <button className="bet-spot-main" disabled={!allowed} onClick={onAdd}>
+      <button className="bet-spot-main" disabled={!allowed} onClick={onAdd} title={info}>
         {label}
         <span className="bet-spot-odds">{odds}</span>
         {amount > 0 && <span className="bet-spot-amount">${amount}</span>}

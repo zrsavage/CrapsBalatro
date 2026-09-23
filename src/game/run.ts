@@ -1,4 +1,4 @@
-import type { DiceInstance, RoundDef, RoundKind, RunState } from './types';
+import type { DiceInstance, RoundChoice, RoundDef, RoundKind, RunState } from './types';
 import { randInt } from './rng';
 import { getModifierDef, MODIFIERS } from '../data/modifiers';
 
@@ -67,7 +67,40 @@ export function buildRoundDef(ante: number, roundIndex: number, rng: () => numbe
   const delta = getModifierDef(modifier)?.rollLimitDelta ?? 0;
   const rollLimit = Math.max(MIN_ROLL_LIMIT, BASE_ROLL_LIMIT + delta);
 
-  return { ante, roundIndex, kind, target, rollLimit, modifier };
+  return { ante, roundIndex, kind, target, rollLimit, modifier, rewardMultiplier: 1 };
+}
+
+/** High Stakes' target premium over the standard round it's paired with —
+ * chosen to matter without re-opening the 1-2-roll-clear problem the
+ * max-bet-per-spot cap was added to fix (the cap scales off `target`, so a
+ * bigger target here also raises what a single spot can carry). */
+const HIGH_STAKES_TARGET_MULT = 1.35;
+const HIGH_STAKES_REWARD_MULT = 1.75;
+
+/** Builds the choice(s) offered between rounds. Boss rounds are forced and
+ * always get one modifier, so there's nothing to choose — just a preview
+ * card showing what's coming so the player can adjust their loadout/relics
+ * before committing. Regular rounds offer a real choice: play it standard,
+ * or take a harder target for a much bigger Comps payout. */
+export function buildRoundChoices(ante: number, roundIndex: number, rng: () => number): RoundChoice[] {
+  const standard = buildRoundDef(ante, roundIndex, rng);
+  if (standard.kind === 'boss') {
+    return [{ id: 'standard', label: 'Boss Round', blurb: 'Forced — no choice. Come prepared.', round: standard }];
+  }
+  const highStakes: RoundDef = {
+    ...standard,
+    target: Math.round(standard.target * HIGH_STAKES_TARGET_MULT),
+    rewardMultiplier: HIGH_STAKES_REWARD_MULT,
+  };
+  return [
+    { id: 'standard', label: 'Standard', blurb: 'The normal round — clear it for the usual Comps payout.', round: standard },
+    {
+      id: 'highStakes',
+      label: 'High Stakes',
+      blurb: `Target +${Math.round((HIGH_STAKES_TARGET_MULT - 1) * 100)}%, but ${HIGH_STAKES_REWARD_MULT}x the Comps reward.`,
+      round: highStakes,
+    },
+  ];
 }
 
 export function createInitialRun(seed: number, rng: () => number): RunState {
@@ -128,7 +161,7 @@ export function createPracticeRun(diceCount: number, seed: number): RunState {
     cashOutCount: 0,
     rollsRemaining: PRACTICE_ROLLS,
     rollsThisRound: 0,
-    currentRound: { ante, roundIndex: 0, kind: 'comeOut', target: 0, rollLimit: PRACTICE_ROLLS, modifier: undefined },
+    currentRound: { ante, roundIndex: 0, kind: 'comeOut', target: 0, rollLimit: PRACTICE_ROLLS, modifier: undefined, rewardMultiplier: 1 },
     shooter: { phase: 'comeOut', point: null },
     activeBets: [],
     dicePool: dice,
@@ -156,9 +189,11 @@ export function chipDenominations(ante: number): number[] {
 }
 
 /** Comp Points awarded for clearing a round, independent of bankroll swings
- * (mirrors Balatro's separation of chips scored vs. shop money). */
-export function compsForClearingRound(ante: number): number {
-  return 3 + ante;
+ * (mirrors Balatro's separation of chips scored vs. shop money). Scaled by
+ * the round's own rewardMultiplier — the payoff for taking a High Stakes
+ * round choice over the standard one. */
+export function compsForClearingRound(ante: number, rewardMultiplier = 1): number {
+  return Math.round((3 + ante) * rewardMultiplier);
 }
 
 /** Returns the (ante, roundIndex) that follows the given round, or null if

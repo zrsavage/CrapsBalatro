@@ -14,6 +14,9 @@ export interface DieDef {
   /** Shop price when this die is offered for purchase. */
   price: number;
   rarity: Rarity;
+  /** True for legendary dice that never appear in the normal shop rotation
+   * until unlocked by a matching achievement (see achievements.ts). */
+  locked?: boolean;
 }
 
 /** An owned copy of a die in the player's dice bag. Multiple copies of the
@@ -98,9 +101,16 @@ export interface RelicDef {
   description: string;
   rarity: Rarity;
   price: number;
+  /** True for "curse" relics: a real drawback paired with a strong benefit,
+   * for players who want to push their luck. Purely a UI tag (badge/price
+   * framing) — the drawback itself is implemented via whichever hooks below
+   * the relic actually uses. */
+  curse?: boolean;
   /** Multiplies a bet's base payout odds before chips are awarded. Applied
-   * in relic-list order, so multiple owned relics compound multiplicatively. */
-  modifyPayoutMultiplier?: (kind: BetKind, base: number) => number;
+   * in relic-list order, so multiple owned relics compound multiplicatively.
+   * Receives the round's active modifier (if any) so a relic can react to it
+   * — e.g. paying extra specifically during a restrictive modifier round. */
+  modifyPayoutMultiplier?: (kind: BetKind, base: number, modifier: RoundModifierId | undefined) => number;
   /** Flat bonus chips awarded whenever this bet kind wins. */
   bonusOnWin?: (kind: BetKind) => number;
   /** Extra rolls granted at the start of a round. */
@@ -138,6 +148,19 @@ export interface RoundDef {
   target: number;
   rollLimit: number;
   modifier?: RoundModifierId;
+  /** Multiplies the Comps reward for clearing this specific round — the
+   * payoff for picking a riskier round variant at the choice screen. */
+  rewardMultiplier: number;
+}
+
+/** One option offered at the round-choice screen between rounds. Boss
+ * rounds have exactly one (a preview, no real choice); regular rounds
+ * offer two, trading a harder target for a bigger Comps payout. */
+export interface RoundChoice {
+  id: 'standard' | 'highStakes';
+  label: string;
+  blurb: string;
+  round: RoundDef;
 }
 
 /** A randomly-assigned rule change for a single round, always present on
@@ -162,7 +185,7 @@ export type RoundModifierId =
   | 'hornOnly' // only Horn bets pay
   | 'fieldComeOnly'; // only Field, Come, and Don't Come pay
 
-export type GamePhase = 'run' | 'rolling' | 'shop' | 'gameOver' | 'victory';
+export type GamePhase = 'run' | 'rolling' | 'shop' | 'roundSelect' | 'gameOver' | 'victory';
 
 export interface RunState {
   seed: number;
@@ -186,6 +209,9 @@ export interface RunState {
   phase: GamePhase;
   history: RollOutcome[];
   lastRunSummary?: RunSummary;
+  /** Populated while phase === 'roundSelect': the option(s) offered for the
+   * upcoming round, before the player commits to one. */
+  roundChoices?: RoundChoice[];
 }
 
 export interface RunSummary {

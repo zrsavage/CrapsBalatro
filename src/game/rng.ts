@@ -18,3 +18,24 @@ export function randInt(rng: () => number, min: number, max: number): number {
 export function makeSeed(): number {
   return (Math.random() * 0xffffffff) >>> 0;
 }
+
+/** FNV-1a 32-bit string hash — turns any text (a shared code, a date string)
+ * into a deterministic seed, so seeded/daily runs don't require players to
+ * type raw numbers. */
+export function hashStringToSeed(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/** Today's date (UTC) as a stable seed — every player who starts a Daily
+ * Challenge on the same calendar day gets the same starting seed, so the
+ * run's shop/dice RNG stream lines up (their own bet/choice decisions are
+ * still their own, same as any seeded roguelike daily). */
+export function dailySeedForToday(): number {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  return hashStringToSeed(`crapslatro-daily-${today}`);
+}
