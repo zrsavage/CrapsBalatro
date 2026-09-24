@@ -7,20 +7,22 @@ interface PersistedShape {
   unlocked: string[];
   skin: string;
   dice: string;
+  discoveredRelics: string[];
 }
 
 function loadPersisted(): PersistedShape {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { unlocked: [], skin: DEFAULT_SKIN, dice: DEFAULT_DICE_COLOR };
+    if (!raw) return { unlocked: [], skin: DEFAULT_SKIN, dice: DEFAULT_DICE_COLOR, discoveredRelics: [] };
     const parsed = JSON.parse(raw);
     return {
       unlocked: Array.isArray(parsed.unlocked) ? parsed.unlocked : [],
       skin: typeof parsed.skin === 'string' ? parsed.skin : DEFAULT_SKIN,
       dice: typeof parsed.dice === 'string' ? parsed.dice : DEFAULT_DICE_COLOR,
+      discoveredRelics: Array.isArray(parsed.discoveredRelics) ? parsed.discoveredRelics : [],
     };
   } catch {
-    return { unlocked: [], skin: DEFAULT_SKIN, dice: DEFAULT_DICE_COLOR };
+    return { unlocked: [], skin: DEFAULT_SKIN, dice: DEFAULT_DICE_COLOR, discoveredRelics: [] };
   }
 }
 
@@ -36,9 +38,11 @@ interface CosmeticsStore {
   unlockedAchievements: string[];
   selectedSkin: string;
   selectedDice: string;
+  discoveredRelics: string[];
   unlockAchievements: (ids: string[]) => void;
   selectSkin: (id: string) => void;
   selectDice: (id: string) => void;
+  discoverRelics: (defIds: string[]) => void;
 }
 
 /** Achievements unlock (and persist) the moment they're earned, but the
@@ -51,25 +55,35 @@ export const useCosmeticsStore = create<CosmeticsStore>((set, get) => {
     unlockedAchievements: initial.unlocked,
     selectedSkin: initial.skin,
     selectedDice: initial.dice,
+    discoveredRelics: initial.discoveredRelics,
 
     unlockAchievements: (ids) => {
       if (ids.length === 0) return;
-      const { unlockedAchievements, selectedSkin, selectedDice } = get();
+      const { unlockedAchievements, selectedSkin, selectedDice, discoveredRelics } = get();
       const merged = Array.from(new Set([...unlockedAchievements, ...ids]));
-      savePersisted({ unlocked: merged, skin: selectedSkin, dice: selectedDice });
+      savePersisted({ unlocked: merged, skin: selectedSkin, dice: selectedDice, discoveredRelics });
       set({ unlockedAchievements: merged });
     },
 
     selectSkin: (id) => {
-      const { unlockedAchievements, selectedDice } = get();
-      savePersisted({ unlocked: unlockedAchievements, skin: id, dice: selectedDice });
+      const { unlockedAchievements, selectedDice, discoveredRelics } = get();
+      savePersisted({ unlocked: unlockedAchievements, skin: id, dice: selectedDice, discoveredRelics });
       set({ selectedSkin: id });
     },
 
     selectDice: (id) => {
-      const { unlockedAchievements, selectedSkin } = get();
-      savePersisted({ unlocked: unlockedAchievements, skin: selectedSkin, dice: id });
+      const { unlockedAchievements, selectedSkin, discoveredRelics } = get();
+      savePersisted({ unlocked: unlockedAchievements, skin: selectedSkin, dice: id, discoveredRelics });
       set({ selectedDice: id });
+    },
+
+    discoverRelics: (defIds) => {
+      if (defIds.length === 0) return;
+      const { unlockedAchievements, selectedSkin, selectedDice, discoveredRelics } = get();
+      const merged = Array.from(new Set([...discoveredRelics, ...defIds]));
+      if (merged.length === discoveredRelics.length) return;
+      savePersisted({ unlocked: unlockedAchievements, skin: selectedSkin, dice: selectedDice, discoveredRelics: merged });
+      set({ discoveredRelics: merged });
     },
   };
 });

@@ -233,12 +233,12 @@ export const RELIC_CATALOG: RelicDef[] = [
   {
     id: 'greedy_pact',
     name: 'Greedy Pact',
-    description: "CURSE: every round's target is 25% higher — but every bet kind pays an extra 60%.",
+    description: "CURSE: every round's target is 45% higher — but every bet kind pays an extra 45%.",
     rarity: 'rare',
     price: 12,
     curse: true,
-    modifyTarget: (target) => target * 1.25,
-    modifyPayoutMultiplier: (_kind, base) => base * 1.6,
+    modifyTarget: (target) => target * 1.45,
+    modifyPayoutMultiplier: (_kind, base) => base * 1.45,
   },
   {
     id: 'unstable_core',

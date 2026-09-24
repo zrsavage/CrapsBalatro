@@ -83,3 +83,25 @@ export function playLose(): void {
 export function playNeutral(): void {
   tone(392, 0, 0.14, 'sine', 0.12);
 }
+
+/** A light confirm blip for committing to a round choice at the roundSelect
+ * screen — distinct from a win/lose roll result, just an acknowledgment. */
+export function playChoice(): void {
+  tone(440, 0, 0.08, 'triangle', 0.16);
+  tone(587.33, 0.06, 0.1, 'triangle', 0.16);
+}
+
+/** A bright two-note chime for a normal shop purchase (relic or die). */
+export function playPurchase(): void {
+  tone(659.25, 0, 0.09, 'sine', 0.18);
+  tone(880, 0.07, 0.14, 'sine', 0.2);
+}
+
+/** A dissonant sting for acquiring a curse relic — a close, clashing
+ * interval instead of a clean chord, so it reads as a real bargain rather
+ * than an ordinary purchase. */
+export function playCurse(): void {
+  tone(220, 0, 0.28, 'sawtooth', 0.16);
+  tone(233.08, 0, 0.28, 'sawtooth', 0.14); // a minor second above — deliberately clashes
+  tone(146.83, 0.14, 0.3, 'sawtooth', 0.12);
+}

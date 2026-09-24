@@ -9,6 +9,7 @@ export function MainMenu({
   onOptions,
   onStartSeeded,
   onStats,
+  onRelicCodex,
 }: {
   run: RunState;
   onPlay: () => void;
@@ -16,6 +17,7 @@ export function MainMenu({
   onOptions: () => void;
   onStartSeeded: (seed: number) => void;
   onStats: () => void;
+  onRelicCodex: () => void;
 }) {
   const inProgress = run.history.length > 0 || run.ante > 1 || run.phase !== 'run';
   const playLabel =
@@ -47,6 +49,9 @@ export function MainMenu({
         </button>
         <button className="secondary-btn menu-stats-btn" onClick={onStats}>
           📊 Stats
+        </button>
+        <button className="secondary-btn menu-stats-btn" onClick={onRelicCodex}>
+          📖 Relic Codex
         </button>
       </div>
 

@@ -14,7 +14,8 @@ import {
   setLoadout,
 } from '../game/engine';
 import { generateShop } from '../game/shop';
-import { playDiceRoll, playLose, playNeutral, playWin, primeAudio } from '../game/sound';
+import { getRelicDef } from '../data/relics';
+import { playChoice, playCurse, playDiceRoll, playLose, playNeutral, playPurchase, playWin, primeAudio } from '../game/sound';
 import { ACHIEVEMENTS, checkAchievements } from '../data/achievements';
 import { useCosmeticsStore } from './cosmeticsStore';
 import { useStatsStore } from './statsStore';
@@ -54,7 +55,7 @@ function rollDurationFor(run: RunState): number {
   return highStakes ? ROLL_ANIMATION_MS * 2 : ROLL_ANIMATION_MS;
 }
 
-export type Screen = 'menu' | 'game' | 'practice' | 'options' | 'stats';
+export type Screen = 'menu' | 'game' | 'practice' | 'options' | 'stats' | 'relicCodex';
 
 interface GameStore {
   run: RunState;
@@ -82,6 +83,7 @@ interface GameStore {
   goToMenu: () => void;
   goToOptions: () => void;
   goToStats: () => void;
+  goToRelicCodex: () => void;
 
   // Practice sandbox — a completely separate run so trying out a dice tier
   // never touches the player's real progress or achievements.
@@ -181,6 +183,14 @@ export const useGameStore = create<GameStore>((set, get) => {
       const next = buyOffer(run, offer);
       if (next === run) return;
       const runAchievements = trackAchievements(run, next, undefined, get().runAchievements);
+      primeAudio();
+      if (offer.type === 'relic') {
+        useCosmeticsStore.getState().discoverRelics([offer.refId]);
+        if (getRelicDef(offer.refId)?.curse) playCurse();
+        else playPurchase();
+      } else {
+        playPurchase();
+      }
       set((s) => ({
         run: next,
         shop: s.shop ? { ...s.shop, offers: s.shop.offers.filter((o) => o.id !== offer.id) } : null,
@@ -204,7 +214,11 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     chooseRound: (choice) => {
       const { run } = get();
-      set({ run: confirmRoundChoice(run, choice) });
+      const next = confirmRoundChoice(run, choice);
+      if (next === run) return;
+      primeAudio();
+      playChoice();
+      set({ run: next });
     },
 
     restartRun: () => {
@@ -229,6 +243,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     goToMenu: () => set({ screen: 'menu' }),
     goToOptions: () => set({ screen: 'options' }),
     goToStats: () => set({ screen: 'stats' }),
+    goToRelicCodex: () => set({ screen: 'relicCodex' }),
 
     practiceRun: null,
     practiceRng: null,

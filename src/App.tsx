@@ -13,6 +13,7 @@ import { EndScreen } from './components/EndScreen';
 import { MainMenu } from './components/MainMenu';
 import { OptionsMenu } from './components/OptionsMenu';
 import { StatsScreen } from './components/StatsScreen';
+import { RelicCodex } from './components/RelicCodex';
 import { PracticeMode } from './components/PracticeMode';
 import { effectiveDiceCount } from './game/engine';
 
@@ -39,6 +40,7 @@ function App() {
   const goToMenu = useGameStore((s) => s.goToMenu);
   const goToOptions = useGameStore((s) => s.goToOptions);
   const goToStats = useGameStore((s) => s.goToStats);
+  const goToRelicCodex = useGameStore((s) => s.goToRelicCodex);
   const startPractice = useGameStore((s) => s.startPractice);
   const exitPractice = useGameStore((s) => s.exitPractice);
   const practiceRun = useGameStore((s) => s.practiceRun);
@@ -72,6 +74,7 @@ function App() {
           onOptions={goToOptions}
           onStartSeeded={startSeededRun}
           onStats={goToStats}
+          onRelicCodex={goToRelicCodex}
         />
       </div>
     );
@@ -89,6 +92,14 @@ function App() {
     return (
       <div className="app">
         <StatsScreen onBack={goToMenu} />
+      </div>
+    );
+  }
+
+  if (screen === 'relicCodex') {
+    return (
+      <div className="app">
+        <RelicCodex onBack={goToMenu} />
       </div>
     );
   }
